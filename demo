@@ -1,0 +1,1220 @@
+# 🚀 COMPLETE AWS TECH STACK SIMULATION - END TO END
+
+**Welcome to Decision Point Analytics - AWS Edition!**
+
+Let me show you the **COMPLETE AWS DATA ENGINEERING WORKFLOW** from Day 1 to Production!
+
+---
+
+## 🏢 **NEW TECH STACK AT DECISION POINT ANALYTICS**
+
+```
+╔═══════════════════════════════════════════════════════════════╗
+║  DECISION POINT ANALYTICS - AWS TECH STACK                    ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  DATA STORAGE:                                                ║
+║  ├─ S3 (Data Lake)           → Raw/Bronze/Silver/Gold        ║
+║  ├─ Snowflake                → Data Warehouse                ║
+║  └─ RDS (PostgreSQL)         → Metadata/Config               ║
+║                                                               ║
+║  DATA PROCESSING:                                             ║
+║  ├─ AWS Glue                 → ETL Jobs (PySpark)            ║
+║  ├─ AWS Glue DataBrew        → Visual data prep              ║
+║  ├─ AWS Lambda               → Event-driven processing        ║
+║  └─ AWS Glue Crawler         → Schema discovery              ║
+║                                                               ║
+║  ORCHESTRATION:                                               ║
+║  ├─ AWS Step Functions      → Workflow orchestration         ║
+║  ├─ AWS EventBridge         → Event scheduling               ║
+║  └─ Apache Airflow (MWAA)   → Complex DAGs                   ║
+║                                                               ║
+║  STREAMING:                                                   ║
+║  ├─ Amazon Kinesis          → Real-time data streams         ║
+║  ├─ AWS Lambda              → Stream processing              ║
+║  └─ Kinesis Analytics       → SQL on streams                 ║
+║                                                               ║
+║  ML/AI:                                                       ║
+║  ├─ SageMaker               → Model training/deployment      ║
+║  ├─ SageMaker Pipelines     → MLOps workflows                ║
+║  ├─ SageMaker Feature Store → Feature management             ║
+║  └─ SageMaker Endpoints     → Model inference                ║
+║                                                               ║
+║  DATA CATALOG:                                                ║
+║  ├─ AWS Glue Data Catalog   → Metadata repository            ║
+║  └─ AWS Lake Formation      → Data governance                ║
+║                                                               ║
+║  MONITORING:                                                  ║
+║  ├─ CloudWatch              → Logs & metrics                 ║
+║  ├─ CloudTrail              → Audit logs                     ║
+║  └─ X-Ray                   → Distributed tracing            ║
+║                                                               ║
+║  SECURITY:                                                    ║
+║  ├─ IAM                     → Access control                 ║
+║  ├─ KMS                     → Encryption                     ║
+║  └─ Secrets Manager         → Credentials                    ║
+║                                                               ║
+║  BI/ANALYTICS:                                                ║
+║  ├─ QuickSight              → Dashboards                     ║
+║  ├─ Athena                  → SQL queries on S3              ║
+║  └─ Snowflake               → Data warehouse queries         ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
+---
+
+## 🎯 **COMPLETE ARCHITECTURE**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    DATA SOURCES                             │
+├─────────────────────────────────────────────────────────────┤
+│  POS Systems │ ERP (SAP) │ Mobile Apps │ IoT Sensors       │
+└──────┬──────────────┬─────────────┬─────────────┬──────────┘
+       │              │             │             │
+       ▼              ▼             ▼             ▼
+┌─────────────────────────────────────────────────────────────┐
+│              INGESTION LAYER                                │
+├─────────────────────────────────────────────────────────────┤
+│  • S3 Buckets (Landing Zone)                                │
+│  • Amazon Kinesis Data Streams (Real-time)                  │
+│  • AWS DataSync (On-prem to S3)                             │
+│  • AWS Transfer Family (SFTP)                               │
+└──────┬──────────────────────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────────────────────┐
+│              BRONZE LAYER (Raw Data)                        │
+├─────────────────────────────────────────────────────────────┤
+│  S3 Bucket: s3://dpa-data-lake/bronze/                      │
+│  ├─ sales/raw/                                              │
+│  ├─ promotions/raw/                                         │
+│  ├─ inventory/raw/                                          │
+│  └─ customer/raw/                                           │
+│                                                             │
+│  AWS Glue Crawler: Discovers schema automatically          │
+│  AWS Glue Data Catalog: Metadata repository                 │
+└──────┬──────────────────────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────────────────────┐
+│         TRANSFORMATION LAYER (AWS Glue ETL)                 │
+├─────────────────────────────────────────────────────────────┤
+│  AWS Glue Jobs (PySpark):                                   │
+│  ├─ bronze_to_silver_sales.py                               │
+│  ├─ bronze_to_silver_promotions.py                          │
+│  └─ silver_to_gold_aggregations.py                          │
+│                                                             │
+│  AWS Glue DataBrew: Visual data quality & cleaning          │
+└──────┬──────────────────────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────────────────────┐
+│              SILVER LAYER (Cleaned Data)                    │
+├─────────────────────────────────────────────────────────────┤
+│  S3 Bucket: s3://dpa-data-lake/silver/                      │
+│  Format: Apache Iceberg / Delta Lake / Parquet              │
+│  ├─ sales_enriched/                                         │
+│  ├─ promotions_enriched/                                    │
+│  └─ customer_360/                                           │
+└──────┬──────────────────────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────────────────────┐
+│              GOLD LAYER (Business Ready)                    │
+├─────────────────────────────────────────────────────────────┤
+│  S3 Bucket: s3://dpa-data-lake/gold/                        │
+│  ├─ monthly_sales_summary/                                  │
+│  ├─ product_performance/                                    │
+│  └─ customer_insights/                                      │
+│                                                             │
+│  Snowflake Tables (Loaded via Snowpipe):                    │
+│  ├─ ANALYTICS.GOLD.MONTHLY_SALES                            │
+│  ├─ ANALYTICS.GOLD.PRODUCT_PERFORMANCE                      │
+│  └─ ANALYTICS.GOLD.CUSTOMER_INSIGHTS                        │
+└──────┬──────────────────────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────────────────────┐
+│              ML LAYER (SageMaker)                           │
+├─────────────────────────────────────────────────────────────┤
+│  SageMaker Feature Store: Centralized features              │
+│  SageMaker Training Jobs: Model training                    │
+│  SageMaker Model Registry: Version control                  │
+│  SageMaker Endpoints: Real-time inference                   │
+└──────┬──────────────────────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────────────────────┐
+│              CONSUMPTION LAYER                              │
+├─────────────────────────────────────────────────────────────┤
+│  • Amazon QuickSight (Dashboards)                           │
+│  • Amazon Athena (Ad-hoc SQL queries)                       │
+│  • Snowflake (Data warehouse queries)                       │
+│  • SageMaker Endpoints (ML predictions)                     │
+│  • REST APIs (Lambda + API Gateway)                         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📅 **DAY 1: YOUR FIRST DAY - SETUP**
+
+### **9:00 AM - Orientation with Sarah (PM)**
+
+**Sarah:** "Welcome to Decision Point Analytics! Let me show you our AWS setup."
+
+```
+YOU RECEIVE:
+├─ AWS Console Access (IAM user)
+├─ Snowflake Account (data.engineer@dpa.com)
+├─ GitHub Repository access
+├─ JIRA access
+├─ Confluence wiki access
+└─ Slack channels: #data-engineering, #aws-alerts
+```
+
+---
+
+### **AWS IAM Setup**
+
+```json
+// Your IAM User: data-engineer-yourname
+// Attached Policies:
+
+{
+  "Policies": [
+    "AWSGlueConsoleFullAccess",
+    "AmazonS3FullAccess", 
+    "AWSLambda_FullAccess",
+    "AmazonSageMakerFullAccess",
+    "AWSStepFunctionsFullAccess",
+    "CloudWatchLogsFullAccess",
+    "AmazonAthenaFullAccess"
+  ],
+  "MFA": "REQUIRED",
+  "Region": "us-east-1"
+}
+```
+
+---
+
+### **10:00 AM - S3 Bucket Structure Tour**
+
+**Raj (Senior Engineer):** "Let me show you our S3 data lake structure."
+
+```bash
+# AWS CLI - List buckets
+aws s3 ls
+
+# Output:
+2024-01-15 10:23:45 dpa-data-lake-bronze
+2024-01-15 10:23:45 dpa-data-lake-silver
+2024-01-15 10:23:45 dpa-data-lake-gold
+2024-01-15 10:23:45 dpa-glue-scripts
+2024-01-15 10:23:45 dpa-glue-temp
+2024-01-15 10:23:45 dpa-sagemaker-models
+2024-01-15 10:23:45 dpa-lambda-deployment
+```
+
+**View Bronze Layer:**
+
+```bash
+aws s3 ls s3://dpa-data-lake-bronze/ --recursive --human-readable
+
+# Output:
+2024-02-09 14:23:45   15.2 MB bronze/sales/raw/2024/02/sales_20240209.csv
+2024-02-09 14:23:45   12.8 MB bronze/promotions/raw/2024/02/promos_20240209.csv
+2024-02-09 14:23:45    8.4 MB bronze/inventory/raw/2024/02/inventory_20240209.csv
+2024-02-08 14:23:45   14.9 MB bronze/sales/raw/2024/02/sales_20240208.csv
+...
+```
+
+---
+
+## 💻 **YOUR FIRST TASK: CPG-301 - Build Bronze Layer Ingestion**
+
+### **JIRA Story:**
+
+```
+╔═══════════════════════════════════════════════════════════════╗
+║  CPG-301: Ingest Promotional Data to Bronze Layer            ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  As a: Data Engineer                                          ║
+║  I want to: Ingest promotional CSV files from S3 landing zone ║
+║  So that: We can process them in our data pipeline            ║
+║                                                               ║
+║  Acceptance Criteria:                                         ║
+║  ✓ Create AWS Glue Crawler for schema discovery              ║
+║  ✓ Create AWS Glue ETL job to copy to Bronze                 ║
+║  ✓ Add data quality validation                                ║
+║  ✓ Trigger on new file arrival (S3 Event → Lambda)            ║
+║  ✓ Log metrics to CloudWatch                                  ║
+║  ✓ Send SNS alert on failure                                  ║
+║                                                               ║
+║  Story Points: 8                                              ║
+║  Sprint: 15                                                   ║
+║  Assignee: You                                                ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
+---
+
+## 🛠️ **STEP 1: CREATE AWS GLUE CRAWLER**
+
+### **In AWS Console:**
+
+**AWS Glue → Crawlers → Create crawler**
+
+```
+╔═══════════════════════════════════════════════════════════════╗
+║  Create Crawler                                               ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  Name: [bronze-promotions-crawler____________]               ║
+║                                                               ║
+║  Data source:                                                 ║
+║  └─ S3 path: [s3://dpa-data-lake-bronze/promotions/raw/]    ║
+║                                                               ║
+║  IAM Role:                                                    ║
+║  └─ [AWSGlueServiceRole-DataLake_______] ▼                   ║
+║                                                               ║
+║  Target database:                                             ║
+║  └─ [bronze_db___________________] ▼                         ║
+║                                                               ║
+║  Table prefix: [promo__________]                             ║
+║                                                               ║
+║  Schedule:                                                    ║
+║  └─ [On demand______________] ▼                              ║
+║                                                               ║
+║                      [Create crawler]                         ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
+**Run the crawler:**
+
+```bash
+# Via AWS CLI
+aws glue start-crawler --name bronze-promotions-crawler
+
+# Output:
+{
+    "Status": "RUNNING"
+}
+
+# Wait a few seconds...
+aws glue get-crawler --name bronze-promotions-crawler
+
+# Output:
+{
+    "Crawler": {
+        "Name": "bronze-promotions-crawler",
+        "State": "READY",
+        "LastCrawl": {
+            "Status": "SUCCEEDED",
+            "LogGroup": "/aws-glue/crawlers",
+            "MessagePrefix": "bronze-promotions-crawler",
+            "StartTime": "2024-02-09T14:30:00Z"
+        },
+        "SchemaChangePolicy": {...},
+        "CreationTime": "2024-02-09T14:25:00Z"
+    }
+}
+```
+
+**Check discovered schema:**
+
+```bash
+# Query Glue Data Catalog
+aws glue get-table --database-name bronze_db --name promo_raw
+
+# Output:
+{
+    "Table": {
+        "Name": "promo_raw",
+        "DatabaseName": "bronze_db",
+        "StorageDescriptor": {
+            "Columns": [
+                {"Name": "promotion_id", "Type": "string"},
+                {"Name": "product_id", "Type": "string"},
+                {"Name": "product_name", "Type": "string"},
+                {"Name": "brand", "Type": "string"},
+                {"Name": "discount_percentage", "Type": "double"},
+                {"Name": "promo_start_date", "Type": "string"},
+                {"Name": "promo_end_date", "Type": "string"},
+                {"Name": "region", "Type": "string"},
+                {"Name": "budget_usd", "Type": "double"}
+            ],
+            "Location": "s3://dpa-data-lake-bronze/promotions/raw/",
+            "InputFormat": "org.apache.hadoop.mapred.TextInputFormat",
+            "OutputFormat": "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
+            "SerdeInfo": {
+                "SerializationLibrary": "org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe",
+                "Parameters": {
+                    "field.delim": ","
+                }
+            }
+        }
+    }
+}
+```
+
+✅ **Schema discovered automatically!**
+
+---
+
+## 🔧 **STEP 2: CREATE AWS GLUE ETL JOB (BRONZE INGESTION)**
+
+### **Create Glue Job Script**
+
+**File: `bronze_promo_ingestion.py`** (Upload to S3)
+
+```python
+"""
+AWS Glue ETL Job: Bronze Layer Promotion Ingestion
+──────────────────────────────────────────────────
+Purpose: Ingest promotional CSV files to Bronze layer with validation
+Author: Your Name
+Date: 2024-02-09
+"""
+
+import sys
+from awsglue.transforms import *
+from awsglue.utils import getResolvedOptions
+from pyspark.context import SparkContext
+from awsglue.context import GlueContext
+from awsglue.job import Job
+from pyspark.sql.functions import *
+from pyspark.sql.types import *
+from datetime import datetime
+import boto3
+
+# ============================================================================
+# INITIALIZE GLUE CONTEXT
+# ============================================================================
+
+args = getResolvedOptions(sys.argv, ['JOB_NAME'])
+
+sc = SparkContext()
+glueContext = GlueContext(sc)
+spark = glueContext.spark_session
+job = Job(glueContext)
+job.init(args['JOB_NAME'], args)
+
+# CloudWatch client for custom metrics
+cloudwatch = boto3.client('cloudwatch')
+sns = boto3.client('sns')
+
+print("=" * 80)
+print("🚀 STARTING BRONZE LAYER INGESTION")
+print("=" * 80)
+
+# ============================================================================
+# CONFIGURATION
+# ============================================================================
+
+SOURCE_DATABASE = "bronze_db"
+SOURCE_TABLE = "promo_raw"
+TARGET_S3_PATH = "s3://dpa-data-lake-bronze/promotions/processed/"
+SNS_TOPIC_ARN = "arn:aws:sns:us-east-1:123456789012:data-quality-alerts"
+
+print(f"\n📂 Source: {SOURCE_DATABASE}.{SOURCE_TABLE}")
+print(f"💾 Target: {TARGET_S3_PATH}")
+
+# ============================================================================
+# READ FROM GLUE DATA CATALOG
+# ============================================================================
+
+print("\n📖 Reading data from Glue Data Catalog...")
+
+# Create DynamicFrame from Glue Catalog
+datasource = glueContext.create_dynamic_frame.from_catalog(
+    database=SOURCE_DATABASE,
+    table_name=SOURCE_TABLE,
+    transformation_ctx="datasource"
+)
+
+# Convert to Spark DataFrame for easier manipulation
+df = datasource.toDF()
+
+initial_count = df.count()
+print(f"✅ Loaded {initial_count:,} records")
+
+# Show sample
+print("\n📊 Sample data:")
+df.show(5, truncate=False)
+
+# ============================================================================
+# DATA QUALITY VALIDATION
+# ============================================================================
+
+print("\n" + "=" * 80)
+print("🔍 STARTING DATA QUALITY VALIDATION")
+print("=" * 80)
+
+# VALIDATION 1: Check for NULLs
+print("\n🔍 VALIDATION 1: Checking for NULLs...")
+
+critical_columns = ["promotion_id", "product_id", "promo_start_date", "promo_end_date"]
+
+null_counts = {}
+for col_name in critical_columns:
+    null_count = df.filter(col(col_name).isNull()).count()
+    null_counts[col_name] = null_count
+    if null_count > 0:
+        print(f"⚠️  WARNING: {null_count:,} NULL values in {col_name}")
+
+# Remove NULLs
+validated_df = df
+for col_name in critical_columns:
+    validated_df = validated_df.filter(col(col_name).isNotNull())
+
+null_removed = initial_count - validated_df.count()
+print(f"❌ Removed {null_removed:,} records with NULLs")
+
+# VALIDATION 2: Check discount percentage range
+print("\n🔍 VALIDATION 2: Checking discount ranges...")
+
+invalid_discount = validated_df.filter(
+    (col("discount_percentage") < 0) | (col("discount_percentage") > 100)
+).count()
+
+if invalid_discount > 0:
+    print(f"🚨 ALERT: {invalid_discount:,} records with invalid discount!")
+    validated_df = validated_df.filter(
+        (col("discount_percentage") >= 0) & (col("discount_percentage") <= 100)
+    )
+
+# VALIDATION 3: Check budget
+print("\n🔍 VALIDATION 3: Checking budget values...")
+
+invalid_budget = validated_df.filter(
+    (col("budget_usd").isNull()) | (col("budget_usd") < 0)
+).count()
+
+if invalid_budget > 0:
+    print(f"⚠️  WARNING: {invalid_budget:,} records with invalid budget")
+    validated_df = validated_df.filter(
+        col("budget_usd").isNotNull() & (col("budget_usd") >= 0)
+    )
+
+# VALIDATION 4: Date validation
+print("\n🔍 VALIDATION 4: Validating date ranges...")
+
+# Convert string dates to actual dates
+validated_df = validated_df \
+    .withColumn("start_date", to_date(col("promo_start_date"), "yyyy-MM-dd")) \
+    .withColumn("end_date", to_date(col("promo_end_date"), "yyyy-MM-dd"))
+
+# Check if end_date > start_date
+invalid_dates = validated_df.filter(col("end_date") < col("start_date")).count()
+
+if invalid_dates > 0:
+    print(f"🚨 ALERT: {invalid_dates:,} records with invalid date ranges!")
+    validated_df = validated_df.filter(col("end_date") >= col("start_date"))
+
+# Check for duplicates
+print("\n🔍 VALIDATION 5: Checking for duplicates...")
+
+total_records = validated_df.count()
+unique_records = validated_df.select("promotion_id").distinct().count()
+duplicates = total_records - unique_records
+
+if duplicates > 0:
+    print(f"🚨 ALERT: {duplicates:,} duplicate promotion IDs!")
+    validated_df = validated_df.dropDuplicates(["promotion_id"])
+
+# ============================================================================
+# ADD METADATA COLUMNS
+# ============================================================================
+
+print("\n🏷️  Adding metadata columns...")
+
+final_df = validated_df \
+    .withColumn("ingestion_timestamp", current_timestamp()) \
+    .withColumn("ingestion_date", current_date()) \
+    .withColumn("source_system", lit("s3-landing-zone")) \
+    .withColumn("data_quality_flag", lit("VALIDATED")) \
+    .withColumn("job_run_id", lit(args['JOB_RUN_ID']))
+
+final_count = final_df.count()
+
+# ============================================================================
+# DATA QUALITY METRICS
+# ============================================================================
+
+rejection_rate = ((initial_count - final_count) / initial_count) * 100
+
+print("\n" + "=" * 80)
+print("📊 DATA QUALITY SUMMARY")
+print("=" * 80)
+print(f"📥 Initial records:     {initial_count:,}")
+print(f"✅ Valid records:       {final_count:,}")
+print(f"❌ Rejected records:    {initial_count - final_count:,}")
+print(f"📉 Rejection rate:      {rejection_rate:.2f}%")
+print("=" * 80)
+
+# Send metrics to CloudWatch
+cloudwatch.put_metric_data(
+    Namespace='DPA/DataQuality',
+    MetricData=[
+        {
+            'MetricName': 'RecordsProcessed',
+            'Value': initial_count,
+            'Unit': 'Count',
+            'Timestamp': datetime.utcnow()
+        },
+        {
+            'MetricName': 'RecordsRejected',
+            'Value': initial_count - final_count,
+            'Unit': 'Count',
+            'Timestamp': datetime.utcnow()
+        },
+        {
+            'MetricName': 'RejectionRate',
+            'Value': rejection_rate,
+            'Unit': 'Percent',
+            'Timestamp': datetime.utcnow()
+        }
+    ]
+)
+
+# ============================================================================
+# QUALITY GATE: Decide if we should proceed
+# ============================================================================
+
+REJECTION_THRESHOLD = 5.0  # 5%
+
+if rejection_rate > REJECTION_THRESHOLD:
+    error_message = f"""
+    🚨 CRITICAL: Data quality check FAILED!
+    
+    Rejection rate: {rejection_rate:.2f}%
+    Threshold: {REJECTION_THRESHOLD}%
+    
+    Initial records: {initial_count:,}
+    Rejected: {initial_count - final_count:,}
+    
+    Job halted. Please investigate source data quality.
+    """
+    
+    print(error_message)
+    
+    # Send SNS alert
+    sns.publish(
+        TopicArn=SNS_TOPIC_ARN,
+        Subject='🚨 Data Quality Alert - Bronze Ingestion Failed',
+        Message=error_message
+    )
+    
+    # Fail the job
+    raise Exception("Data quality threshold exceeded")
+else:
+    print("✅ Data quality check PASSED")
+
+# ============================================================================
+# WRITE TO S3 (BRONZE LAYER)
+# ============================================================================
+
+print(f"\n💾 Writing to Bronze layer: {TARGET_S3_PATH}")
+
+# Convert back to DynamicFrame for Glue optimizations
+final_dynamic_frame = DynamicFrame.fromDF(final_df, glueContext, "final_dynamic_frame")
+
+# Write to S3 in Parquet format (partitioned by ingestion_date)
+glueContext.write_dynamic_frame.from_options(
+    frame=final_dynamic_frame,
+    connection_type="s3",
+    connection_options={
+        "path": TARGET_S3_PATH,
+        "partitionKeys": ["ingestion_date"]
+    },
+    format="parquet",
+    format_options={
+        "compression": "snappy"
+    },
+    transformation_ctx="write_to_bronze"
+)
+
+print("✅ Data written to Bronze layer successfully!")
+
+# ============================================================================
+# UPDATE GLUE DATA CATALOG
+# ============================================================================
+
+print("\n📋 Updating Glue Data Catalog...")
+
+# This creates/updates a table in the catalog pointing to the Parquet files
+datasink = glueContext.getSink(
+    connection_type="s3",
+    path=TARGET_S3_PATH,
+    enableUpdateCatalog=True,
+    updateBehavior="UPDATE_IN_DATABASE"
+)
+
+datasink.setFormat("parquet")
+datasink.setCatalogInfo(
+    catalogDatabase="bronze_db",
+    catalogTableName="promotions_processed"
+)
+
+datasink.writeFrame(final_dynamic_frame)
+
+print("✅ Glue Data Catalog updated!")
+
+# ============================================================================
+# JOB COMPLETION
+# ============================================================================
+
+print("\n" + "=" * 80)
+print("🎉 BRONZE LAYER INGESTION COMPLETE!")
+print("=" * 80)
+
+# Send success notification
+sns.publish(
+    TopicArn=SNS_TOPIC_ARN,
+    Subject='✅ Bronze Ingestion Success',
+    Message=f"""
+    Bronze layer ingestion completed successfully!
+    
+    Records processed: {final_count:,}
+    Rejection rate: {rejection_rate:.2f}%
+    Output location: {TARGET_S3_PATH}
+    
+    Job: {args['JOB_NAME']}
+    Run ID: {args['JOB_RUN_ID']}
+    """
+)
+
+job.commit()
+```
+
+---
+
+### **Upload Script to S3:**
+
+```bash
+# Upload Glue job script
+aws s3 cp bronze_promo_ingestion.py s3://dpa-glue-scripts/jobs/
+
+# Output:
+upload: ./bronze_promo_ingestion.py to s3://dpa-glue-scripts/jobs/bronze_promo_ingestion.py
+```
+
+---
+
+### **Create Glue Job in AWS Console:**
+
+**AWS Glue → ETL Jobs → Create job**
+
+```
+╔═══════════════════════════════════════════════════════════════╗
+║  Create Glue Job                                              ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  Name: [bronze-promo-ingestion____________]                  ║
+║                                                               ║
+║  IAM Role: [AWSGlueServiceRole-DataLake____] ▼               ║
+║                                                               ║
+║  Type: [Spark_____________________] ▼                        ║
+║                                                               ║
+║  Glue version: [Glue 4.0___________] ▼                       ║
+║                                                               ║
+║  Language: [Python 3_______________] ▼                       ║
+║                                                               ║
+║  Script path:                                                 ║
+║  └─ [s3://dpa-glue-scripts/jobs/bronze_promo_ingestion.py]  ║
+║                                                               ║
+║  Worker type: [G.1X (4 vCPU, 16 GB)_] ▼                      ║
+║  Number of workers: [5_____]                                  ║
+║                                                               ║
+║  Job timeout: [60___] minutes                                 ║
+║                                                               ║
+║  Max retries: [2___]                                          ║
+║                                                               ║
+║  Job parameters:                                              ║
+║  └─ --enable-metrics: true                                    ║
+║  └─ --enable-continuous-cloudwatch-log: true                  ║
+║                                                               ║
+║                      [Create job]                             ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
+---
+
+### **Run the Glue Job:**
+
+```bash
+# Start job via CLI
+aws glue start-job-run --job-name bronze-promo-ingestion
+
+# Output:
+{
+    "JobRunId": "jr_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+}
+
+# Check job status
+aws glue get-job-run \
+    --job-name bronze-promo-ingestion \
+    --run-id jr_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
+
+# Output:
+{
+    "JobRun": {
+        "Id": "jr_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6",
+        "JobName": "bronze-promo-ingestion",
+        "StartedOn": "2024-02-09T14:45:00Z",
+        "JobRunState": "RUNNING",
+        "ExecutionTime": 120,
+        "Timeout": 60,
+        "MaxCapacity": 5.0
+    }
+}
+```
+
+---
+
+### **Monitor in CloudWatch:**
+
+**CloudWatch → Log Groups → `/aws-glue/jobs/bronze-promo-ingestion`**
+
+```
+[2024-02-09 14:45:23] ============================================================
+[2024-02-09 14:45:23] 🚀 STARTING BRONZE LAYER INGESTION
+[2024-02-09 14:45:23] ============================================================
+[2024-02-09 14:45:25] 📂 Source: bronze_db.promo_raw
+[2024-02-09 14:45:25] 💾 Target: s3://dpa-data-lake-bronze/promotions/processed/
+[2024-02-09 14:45:27] 📖 Reading data from Glue Data Catalog...
+[2024-02-09 14:45:34] ✅ Loaded 45,678 records
+[2024-02-09 14:45:38] 🔍 VALIDATION 1: Checking for NULLs...
+[2024-02-09 14:45:42] ⚠️  WARNING: 23 NULL values in product_id
+[2024-02-09 14:45:45] ❌ Removed 23 records with NULLs
+[2024-02-09 14:45:48] 🔍 VALIDATION 2: Checking discount ranges...
+[2024-02-09 14:45:51] 🚨 ALERT: 12 records with invalid discount!
+[2024-02-09 14:45:55] ✅ Data quality check PASSED
+[2024-02-09 14:46:12] 💾 Writing to Bronze layer...
+[2024-02-09 14:46:45] ✅ Data written to Bronze layer successfully!
+[2024-02-09 14:46:48] 🎉 BRONZE LAYER INGESTION COMPLETE!
+```
+
+---
+
+## 📧 **YOU RECEIVE SNS EMAIL:**
+
+```
+From: AWS Notifications <no-reply@sns.amazonaws.com>
+To: data-engineering@dpa.com
+Subject: ✅ Bronze Ingestion Success
+
+Bronze layer ingestion completed successfully!
+
+Records processed: 45,643
+Rejection rate: 0.08%
+Output location: s3://dpa-data-lake-bronze/promotions/processed/
+
+Job: bronze-promo-ingestion
+Run ID: jr_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
+Timestamp: 2024-02-09 14:46:50 UTC
+```
+
+✅ **Bronze layer complete!**
+
+---
+
+## 🥈 **STEP 3: CREATE SILVER LAYER (AWS GLUE JOB)**
+
+### **Create Silver Transformation Script**
+
+**File: `silver_promo_transformation.py`**
+
+```python
+"""
+AWS Glue ETL Job: Silver Layer Promotion Transformation
+────────────────────────────────────────────────────────
+Purpose: Transform Bronze promotions to Silver with business logic
+"""
+
+import sys
+from awsglue.transforms import *
+from awsglue.utils import getResolvedOptions
+from pyspark.context import SparkContext
+from awsglue.context import GlueContext
+from awsglue.job import Job
+from pyspark.sql.functions import *
+from pyspark.sql.window import Window
+
+# Initialize
+args = getResolvedOptions(sys.argv, ['JOB_NAME'])
+sc = SparkContext()
+glueContext = GlueContext(sc)
+spark = glueContext.spark_session
+job = Job(glueContext)
+job.init(args['JOB_NAME'], args)
+
+print("=" * 80)
+print("🥈 SILVER LAYER TRANSFORMATION - PROMOTIONS")
+print("=" * 80)
+
+# ============================================================================
+# READ FROM BRONZE
+# ============================================================================
+
+print("\n📖 Reading from Bronze layer...")
+
+bronze_df = glueContext.create_dynamic_frame.from_catalog(
+    database="bronze_db",
+    table_name="promotions_processed"
+).toDF()
+
+print(f"✅ Loaded {bronze_df.count():,} records from Bronze")
+
+# ============================================================================
+# BUSINESS TRANSFORMATIONS
+# ============================================================================
+
+print("\n💼 Applying business transformations...")
+
+# Calculate promotion duration
+silver_df = bronze_df.withColumn(
+    "promo_duration_days",
+    datediff(col("end_date"), col("start_date"))
+)
+
+# Categorize discount levels
+silver_df = silver_df.withColumn(
+    "discount_category",
+    when(col("discount_percentage") < 10, "Low")
+    .when((col("discount_percentage") >= 10) & (col("discount_percentage") < 25), "Medium")
+    .when((col("discount_percentage") >= 25) & (col("discount_percentage") < 50), "High")
+    .otherwise("Very High")
+)
+
+# Calculate daily budget
+silver_df = silver_df.withColumn(
+    "budget_per_day",
+    col("budget_usd") / col("promo_duration_days")
+)
+
+# Extract temporal features
+silver_df = silver_df \
+    .withColumn("promo_start_year", year("start_date")) \
+    .withColumn("promo_start_month", month("start_date")) \
+    .withColumn("promo_start_quarter", quarter("start_date")) \
+    .withColumn("promo_start_day_of_week", dayofweek("start_date"))
+
+# Add season
+silver_df = silver_df.withColumn(
+    "season",
+    when(col("promo_start_month").isin([12, 1, 2]), "Winter")
+    .when(col("promo_start_month").isin([3, 4, 5]), "Spring")
+    .when(col("promo_start_month").isin([6, 7, 8]), "Summer")
+    .otherwise("Fall")
+)
+
+# Add active flag
+silver_df = silver_df.withColumn(
+    "is_currently_active",
+    when(
+        (col("start_date") <= current_date()) & 
+        (col("end_date") >= current_date()),
+        True
+    ).otherwise(False)
+)
+
+# Add Silver metadata
+silver_df = silver_df \
+    .withColumn("silver_processing_timestamp", current_timestamp()) \
+    .withColumn("silver_processing_date", current_date()) \
+    .withColumn("data_quality_layer", lit("SILVER"))
+
+print("✅ Business transformations applied")
+
+# ============================================================================
+# WRITE TO SILVER LAYER
+# ============================================================================
+
+TARGET_S3_PATH = "s3://dpa-data-lake-silver/promotions/"
+
+print(f"\n💾 Writing to Silver layer: {TARGET_S3_PATH}")
+
+silver_dynamic_frame = DynamicFrame.fromDF(silver_df, glueContext, "silver_df")
+
+glueContext.write_dynamic_frame.from_options(
+    frame=silver_dynamic_frame,
+    connection_type="s3",
+    connection_options={
+        "path": TARGET_S3_PATH,
+        "partitionKeys": ["promo_start_year", "promo_start_month"]
+    },
+    format="parquet",
+    format_options={"compression": "snappy"}
+)
+
+print("✅ Silver layer written successfully!")
+
+# Update catalog
+datasink = glueContext.getSink(
+    connection_type="s3",
+    path=TARGET_S3_PATH,
+    enableUpdateCatalog=True
+)
+datasink.setFormat("parquet")
+datasink.setCatalogInfo(
+    catalogDatabase="silver_db",
+    catalogTableName="promotions_enriched"
+)
+datasink.writeFrame(silver_dynamic_frame)
+
+print("✅ Glue Data Catalog updated!")
+
+print("\n🎉 SILVER LAYER TRANSFORMATION COMPLETE!")
+
+job.commit()
+```
+
+**Upload and create Glue job (same process as Bronze)**
+
+---
+
+## 🥇 **STEP 4: CREATE GOLD LAYER & LOAD TO SNOWFLAKE**
+
+### **Gold Aggregation Glue Job**
+
+**File: `gold_promo_aggregations.py`**
+
+```python
+"""
+AWS Glue ETL Job: Gold Layer Aggregations → Snowflake
+──────────────────────────────────────────────────────
+Purpose: Create business-ready aggregations and load to Snowflake
+"""
+
+import sys
+from awsglue.transforms import *
+from awsglue.utils import getResolvedOptions
+from pyspark.context import SparkContext
+from awsglue.context import GlueContext
+from awsglue.job import Job
+from pyspark.sql.functions import *
+
+args = getResolvedOptions(sys.argv, ['JOB_NAME'])
+sc = SparkContext()
+glueContext = GlueContext(sc)
+spark = glueContext.spark_session
+job = Job(glueContext)
+job.init(args['JOB_NAME'], args)
+
+print("=" * 80)
+print("🥇 GOLD LAYER AGGREGATIONS")
+print("=" * 80)
+
+# Read from Silver
+silver_df = glueContext.create_dynamic_frame.from_catalog(
+    database="silver_db",
+    table_name="promotions_enriched"
+).toDF()
+
+# ============================================================================
+# GOLD TABLE 1: Monthly Promotion Summary
+# ============================================================================
+
+monthly_summary = silver_df.groupBy(
+    "promo_start_year",
+    "promo_start_month",
+    "region"
+).agg(
+    count("promotion_id").alias("total_promotions"),
+    sum("budget_usd").alias("total_budget"),
+    avg("discount_percentage").alias("avg_discount"),
+    countDistinct("product_id").alias("unique_products"),
+    avg("promo_duration_days").alias("avg_duration_days")
+)
+
+# Write to S3 (Gold)
+monthly_summary_path = "s3://dpa-data-lake-gold/monthly_promo_summary/"
+
+monthly_summary.write \
+    .format("parquet") \
+    .mode("overwrite") \
+    .partitionBy("promo_start_year", "promo_start_month") \
+    .save(monthly_summary_path)
+
+print("✅ Monthly summary written to S3")
+
+# ============================================================================
+# LOAD TO SNOWFLAKE
+# ============================================================================
+
+print("\n❄️  Loading to Snowflake...")
+
+# Snowflake connection options
+sf_options = {
+    "sfURL": "https://abc12345.us-east-1.snowflakecomputing.com",
+    "sfUser": "GLUE_USER",
+    "sfPassword": "{{resolve:secretsmanager:snowflake/glue_user:SecretString:password}}",
+    "sfDatabase": "ANALYTICS",
+    "sfSchema": "GOLD",
+    "sfWarehouse": "COMPUTE_WH",
+    "dbtable": "MONTHLY_PROMO_SUMMARY"
+}
+
+# Write to Snowflake
+monthly_summary.write \
+    .format("snowflake") \
+    .options(**sf_options) \
+    .mode("overwrite") \
+    .save()
+
+print("✅ Data loaded to Snowflake!")
+
+job.commit()
+```
+
+---
+
+## 🔄 **STEP 5: ORCHESTRATION WITH AWS STEP FUNCTIONS**
+
+### **Create State Machine**
+
+**File: `promotion_etl_workflow.json`**
+
+```json
+{
+  "Comment": "Promotion ETL Pipeline - Bronze → Silver → Gold → Snowflake",
+  "StartAt": "RunBronzeIngestion",
+  "States": {
+    "RunBronzeIngestion": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "bronze-promo-ingestion"
+      },
+      "Next": "CheckBronzeSuccess",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "NotifyFailure"
+        }
+      ]
+    },
+    
+    "CheckBronzeSuccess": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.JobRunState",
+          "StringEquals": "SUCCEEDED",
+          "Next": "RunSilverTransformation"
+        }
+      ],
+      "Default": "NotifyFailure"
+    },
+    
+    "RunSilverTransformation": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "silver-promo-transformation"
+      },
+      "Next": "RunGoldAggregations",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "NotifyFailure"
+        }
+      ]
+    },
+    
+    "RunGoldAggregations": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "gold-promo-aggregations"
+      },
+      "Next": "RunDataQualityChecks",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "NotifyFailure"
+        }
+      ]
+    },
+    
+    "RunDataQualityChecks": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "data-quality-validator",
+        "Payload": {
+          "database": "gold_db",
+          "table": "monthly_promo_summary"
+        }
+      },
+      "Next": "NotifySuccess"
+    },
+    
+    "NotifySuccess": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "arn:aws:sns:us-east-1:123456789012:pipeline-success",
+        "Subject": "✅ Promotion Pipeline Success",
+        "Message.$": "$.Payload.message"
+      },
+      "End": true
+    },
+    
+    "NotifyFailure": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "arn:aws:sns:us-east-1:123456789012:pipeline-failure",
+        "Subject": "🚨 Promotion Pipeline Failed",
+        "Message": "Pipeline failed. Check CloudWatch logs."
+      },
+      "End": true
+    }
+  }
+}
+```
+
+**Create State Machine:**
+
+```bash
+aws stepfunctions create-state-machine \
+    --name promotion-etl-pipeline \
+    --definition file://promotion_etl_workflow.json \
+    --role-arn arn:aws:iam::123456789012:role/StepFunctionsExecutionRole
+```
+
+---
+
+### **Schedule with EventBridge:**
+
+```bash
+# Create rule to run daily at 2 AM
+aws events put-rule \
+    --name daily-promotion-pipeline \
+    --schedule-expression "cron(0 2 * * ? *)" \
+    --state ENABLED
+
+# Add State Machine as target
+aws events put-targets \
+    --rule daily-promotion-pipeline \
+    --targets "Id"="1","Arn"="arn:aws:states:us-east-1:123456789012:stateMachine:promotion-etl-pipeline"
+```
+
+---
+
+## 🎯 **STEP 6: SAGEMAKER ML PIPELINE**
+
+Will create a comprehensive SageMaker section in the next response showing:
+- Feature engineering with SageMaker Processing
+- Model training with SageMaker Training Jobs  
+- MLOps with SageMaker Pipelines
+- Real-time inference with SageMaker Endpoints
+
+**Want me to continue with the complete SageMaker MLOps workflow?** 🚀
