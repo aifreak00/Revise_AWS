@@ -1,0 +1,1073 @@
+# 🥈 COMPLETE SILVER LAYER - AWS GLUE TRANSFORMATION
+
+Let me show you the **COMPLETE SILVER LAYER** transformation using AWS Glue with real business logic for CPG analytics!
+
+---
+
+## 📋 **JIRA STORY: CPG-402**
+
+```
+╔═══════════════════════════════════════════════════════════════╗
+║  CPG-402: Bronze → Silver Transformation (AWS Glue)           ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  As a: Data Engineer                                          ║
+║  I want to: Transform Bronze data to Silver with enrichment  ║
+║  So that: Analysts have clean, business-ready data           ║
+║                                                               ║
+║  Acceptance Criteria:                                         ║
+║  ✓ Read from Bronze layer (Glue Data Catalog)                ║
+║  ✓ Apply data cleaning & validation                          ║
+║  ✓ Add business logic transformations                        ║
+║  ✓ Join with product/store master data                       ║
+║  ✓ Calculate derived metrics                                 ║
+║  ✓ Write to Silver S3 (Parquet, partitioned)                 ║
+║  ✓ Update Glue Data Catalog                                  ║
+║  ✓ Data quality metrics to CloudWatch                        ║
+║  ✓ Integration tests passing                                 ║
+║                                                               ║
+║  Story Points: 8                                              ║
+║  Sprint: 16                                                   ║
+║  Assignee: You                                                ║
+║  Reviewer: Raj                                                ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
+---
+
+## 🎯 **SILVER LAYER TRANSFORMATIONS - WHAT WE'LL DO**
+
+```
+╔═══════════════════════════════════════════════════════════════╗
+║  SILVER LAYER TRANSFORMATION LOGIC                            ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  1. DATA CLEANING:                                            ║
+║     ├─ Remove duplicates                                      ║
+║     ├─ Handle missing values                                  ║
+║     ├─ Standardize data types                                 ║
+║     └─ Fix data quality issues                                ║
+║                                                               ║
+║  2. ENRICHMENT:                                               ║
+║     ├─ Join with Product Master (attributes, pricing)        ║
+║     ├─ Join with Store Master (location, size, type)         ║
+║     ├─ Add product hierarchy (category → subcategory)        ║
+║     └─ Add geographic hierarchy (region → state → city)      ║
+║                                                               ║
+║  3. BUSINESS LOGIC:                                           ║
+║     ├─ Calculate promotion duration                          ║
+║     ├─ Categorize discount levels                            ║
+║     ├─ Calculate budget per day                              ║
+║     ├─ Identify seasonal patterns                            ║
+║     ├─ Calculate margin impact                               ║
+║     └─ Flag high-value promotions                            ║
+║                                                               ║
+║  4. DERIVED METRICS:                                          ║
+║     ├─ Effective discount rate                               ║
+║     ├─ ROI indicators                                         ║
+║     ├─ Promotion intensity score                             ║
+║     └─ Risk flags                                             ║
+║                                                               ║
+║  5. TEMPORAL FEATURES:                                        ║
+║     ├─ Year, Quarter, Month, Week, Day                       ║
+║     ├─ Day of week, Weekend flag                             ║
+║     ├─ Holiday flag                                           ║
+║     └─ Season classification                                  ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
+---
+
+## 💻 **STEP 1: CREATE MASTER DATA TABLES**
+
+### **First, create Product Master in Bronze**
+
+**File: `product_master.csv`** (Sample reference data)
+
+```csv
+product_id,product_name,brand,category,subcategory,unit_price,cost_price,supplier,pack_size,uom
+SKU_1234,Dove Body Wash 500ml,Dove,Personal Care,Body Care,12.99,6.50,Unilever,500,ml
+SKU_5678,Axe Deodorant 150ml,Axe,Personal Care,Deodorants,8.49,4.20,Unilever,150,ml
+SKU_9101,Knorr Soup Mix,Knorr,Food,Instant Foods,3.99,1.80,Unilever,50,g
+SKU_1121,Lipton Green Tea,Lipton,Beverages,Tea,5.99,2.90,Unilever,100,bags
+SKU_3141,Ben & Jerry's Ice Cream,Ben & Jerry's,Food,Frozen Desserts,7.99,3.50,Unilever,473,ml
+```
+
+**Upload to S3:**
+
+```bash
+# Upload product master
+aws s3 cp product_master.csv s3://dpa-bronze/reference_data/product_master/ --profile dpa-prod
+
+# Create Glue Crawler for product master
+aws glue create-crawler \
+    --name product-master-crawler \
+    --role arn:aws:iam::123456789012:role/AWSGlueServiceRole \
+    --database-name bronze_db \
+    --targets '{
+        "S3Targets": [
+            {
+                "Path": "s3://dpa-bronze/reference_data/product_master/"
+            }
+        ]
+    }' \
+    --table-prefix "ref_" \
+    --profile dpa-prod
+
+# Run crawler
+aws glue start-crawler --name product-master-crawler --profile dpa-prod
+```
+
+**Store Master:**
+
+```bash
+# Similarly create store_master.csv and upload
+cat > store_master.csv <<EOF
+store_id,store_name,store_type,region,state,city,size_sqft,avg_daily_foottraffic
+ST_0001,Walmart Supercenter Boston,Supercenter,Northeast,MA,Boston,150000,5000
+ST_0002,Target Downtown NYC,Urban,Northeast,NY,New York,45000,8000
+ST_0003,Kroger Atlanta,Grocery,Southeast,GA,Atlanta,80000,4500
+ST_0004,Safeway SF,Grocery,West,CA,San Francisco,60000,3500
+ST_0005,Whole Foods LA,Organic,West,CA,Los Angeles,40000,2500
+EOF
+
+aws s3 cp store_master.csv s3://dpa-bronze/reference_data/store_master/ --profile dpa-prod
+
+# Create crawler
+aws glue create-crawler \
+    --name store-master-crawler \
+    --role arn:aws:iam::123456789012:role/AWSGlueServiceRole \
+    --database-name bronze_db \
+    --targets '{
+        "S3Targets": [
+            {
+                "Path": "s3://dpa-bronze/reference_data/store_master/"
+            }
+        ]
+    }' \
+    --table-prefix "ref_" \
+    --profile dpa-prod
+
+aws glue start-crawler --name store-master-crawler --profile dpa-prod
+```
+
+---
+
+## 🔧 **STEP 2: CREATE SILVER TRANSFORMATION GLUE JOB**
+
+**File: `glue_silver_promo_transformation.py`**
+
+```python
+"""
+AWS Glue ETL Job: Silver Layer Promotion Transformation
+────────────────────────────────────────────────────────
+Purpose: Transform Bronze promotions to Silver with enrichment
+Input: Bronze promotions, product master, store master
+Output: Silver enriched promotions (Parquet)
+"""
+
+import sys
+from awsglue.transforms import *
+from awsglue.utils import getResolvedOptions
+from pyspark.context import SparkContext
+from awsglue.context import GlueContext
+from awsglue.job import Job
+from awsglue.dynamicframe import DynamicFrame
+from pyspark.sql.functions import *
+from pyspark.sql.window import Window
+from pyspark.sql.types import *
+import boto3
+from datetime import datetime
+
+# Initialize
+args = getResolvedOptions(sys.argv, ['JOB_NAME'])
+
+sc = SparkContext()
+glueContext = GlueContext(sc)
+spark = glueContext.spark_session
+job = Job(glueContext)
+job.init(args['JOB_NAME'], args)
+
+# Clients
+cloudwatch = boto3.client('cloudwatch')
+sns = boto3.client('sns')
+
+SNS_TOPIC = "arn:aws:sns:us-east-1:123456789012:data-quality-alerts"
+
+print("=" * 80)
+print("🥈 SILVER LAYER TRANSFORMATION - PROMOTIONS")
+print("=" * 80)
+
+# ============================================================================
+# CONFIGURATION
+# ============================================================================
+
+CATALOG_DATABASE = "bronze_db"
+BRONZE_TABLE = "promotions_raw"
+PRODUCT_MASTER_TABLE = "ref_product_master"
+STORE_MASTER_TABLE = "ref_store_master"
+
+SILVER_OUTPUT_PATH = "s3://dpa-silver/promotions_enriched/"
+SILVER_CATALOG_DATABASE = "silver_db"
+SILVER_CATALOG_TABLE = "promotions_enriched"
+
+print(f"\n📖 Source Tables:")
+print(f"   - {CATALOG_DATABASE}.{BRONZE_TABLE}")
+print(f"   - {CATALOG_DATABASE}.{PRODUCT_MASTER_TABLE}")
+print(f"   - {CATALOG_DATABASE}.{STORE_MASTER_TABLE}")
+
+# ============================================================================
+# STEP 1: READ FROM BRONZE LAYER
+# ============================================================================
+
+print("\n" + "=" * 80)
+print("STEP 1: READING BRONZE DATA")
+print("=" * 80)
+
+# Read promotions from Bronze
+bronze_promo_dyf = glueContext.create_dynamic_frame.from_catalog(
+    database=CATALOG_DATABASE,
+    table_name=BRONZE_TABLE,
+    transformation_ctx="bronze_promo_dyf"
+)
+
+# Convert to DataFrame
+bronze_df = bronze_promo_dyf.toDF()
+
+initial_count = bronze_df.count()
+print(f"\n✅ Bronze Promotions: {initial_count:,} records")
+
+# Show schema
+print("\n📋 Bronze Schema:")
+bronze_df.printSchema()
+
+# Read Product Master
+product_master_dyf = glueContext.create_dynamic_frame.from_catalog(
+    database=CATALOG_DATABASE,
+    table_name=PRODUCT_MASTER_TABLE,
+    transformation_ctx="product_master_dyf"
+)
+
+product_master_df = product_master_dyf.toDF()
+print(f"\n✅ Product Master: {product_master_df.count():,} products")
+
+# Read Store Master
+store_master_dyf = glueContext.create_dynamic_frame.from_catalog(
+    database=CATALOG_DATABASE,
+    table_name=STORE_MASTER_TABLE,
+    transformation_ctx="store_master_dyf"
+)
+
+store_master_df = store_master_dyf.toDF()
+print(f"✅ Store Master: {store_master_df.count():,} stores")
+
+# ============================================================================
+# STEP 2: DATA CLEANING
+# ============================================================================
+
+print("\n" + "=" * 80)
+print("STEP 2: DATA CLEANING")
+print("=" * 80)
+
+# Remove test/invalid data
+cleaned_df = bronze_df.filter(
+    ~col("promotion_id").startswith("TEST_") &
+    ~col("promotion_id").startswith("TEMP_")
+)
+
+# Remove records with data quality issues flagged in Bronze
+cleaned_df = cleaned_df.filter(
+    col("data_quality_layer") == "BRONZE"
+)
+
+# Keep only latest version of each promotion (in case of reprocessing)
+window_spec = Window.partitionBy("promotion_id").orderBy(col("ingestion_timestamp").desc())
+
+cleaned_df = cleaned_df.withColumn("row_num", row_number().over(window_spec)) \
+    .filter(col("row_num") == 1) \
+    .drop("row_num")
+
+cleaned_count = cleaned_df.count()
+print(f"\n✅ After cleaning: {cleaned_count:,} records")
+print(f"📉 Removed: {initial_count - cleaned_count:,} records")
+
+# ============================================================================
+# STEP 3: BUSINESS TRANSFORMATIONS
+# ============================================================================
+
+print("\n" + "=" * 80)
+print("STEP 3: BUSINESS TRANSFORMATIONS")
+print("=" * 80)
+
+# 3.1: Calculate promotion duration
+print("\n🔧 Calculating promotion duration...")
+
+transformed_df = cleaned_df.withColumn(
+    "promo_duration_days",
+    datediff(col("end_date"), col("start_date")) + 1  # Include both start and end day
+)
+
+# 3.2: Categorize discount levels
+print("🔧 Categorizing discount levels...")
+
+transformed_df = transformed_df.withColumn(
+    "discount_category",
+    when(col("discount_percentage") < 10, "Low")
+    .when((col("discount_percentage") >= 10) & (col("discount_percentage") < 25), "Medium")
+    .when((col("discount_percentage") >= 25) & (col("discount_percentage") < 50), "High")
+    .otherwise("Very High")
+)
+
+# 3.3: Calculate daily budget
+print("🔧 Calculating budget metrics...")
+
+transformed_df = transformed_df.withColumn(
+    "budget_per_day",
+    when(col("promo_duration_days") > 0, 
+         col("budget_usd") / col("promo_duration_days"))
+    .otherwise(col("budget_usd"))
+)
+
+# 3.4: Extract temporal features
+print("🔧 Adding temporal features...")
+
+transformed_df = transformed_df \
+    .withColumn("promo_start_year", year("start_date")) \
+    .withColumn("promo_start_month", month("start_date")) \
+    .withColumn("promo_start_quarter", quarter("start_date")) \
+    .withColumn("promo_start_day_of_week", dayofweek("start_date")) \
+    .withColumn("promo_start_week_of_year", weekofyear("start_date"))
+
+# Day name
+transformed_df = transformed_df.withColumn(
+    "promo_start_day_name",
+    when(col("promo_start_day_of_week") == 1, "Sunday")
+    .when(col("promo_start_day_of_week") == 2, "Monday")
+    .when(col("promo_start_day_of_week") == 3, "Tuesday")
+    .when(col("promo_start_day_of_week") == 4, "Wednesday")
+    .when(col("promo_start_day_of_week") == 5, "Thursday")
+    .when(col("promo_start_day_of_week") == 6, "Friday")
+    .otherwise("Saturday")
+)
+
+# Weekend flag
+transformed_df = transformed_df.withColumn(
+    "is_weekend_start",
+    when(col("promo_start_day_of_week").isin([1, 7]), 1).otherwise(0)
+)
+
+# Month name
+transformed_df = transformed_df.withColumn(
+    "promo_start_month_name",
+    date_format("start_date", "MMMM")
+)
+
+# 3.5: Season classification
+print("🔧 Classifying seasons...")
+
+transformed_df = transformed_df.withColumn(
+    "season",
+    when(col("promo_start_month").isin([12, 1, 2]), "Winter")
+    .when(col("promo_start_month").isin([3, 4, 5]), "Spring")
+    .when(col("promo_start_month").isin([6, 7, 8]), "Summer")
+    .otherwise("Fall")
+)
+
+# 3.6: Holiday flags (US holidays)
+print("🔧 Adding holiday flags...")
+
+# Define major US holidays (simplified - in production, use a holiday calendar table)
+holidays_2024 = [
+    "2024-01-01",  # New Year's Day
+    "2024-01-15",  # MLK Day
+    "2024-02-14",  # Valentine's Day
+    "2024-02-19",  # Presidents Day
+    "2024-03-17",  # St. Patrick's Day
+    "2024-04-21",  # Easter
+    "2024-05-27",  # Memorial Day
+    "2024-07-04",  # Independence Day
+    "2024-09-02",  # Labor Day
+    "2024-10-31",  # Halloween
+    "2024-11-28",  # Thanksgiving
+    "2024-12-25",  # Christmas
+]
+
+transformed_df = transformed_df.withColumn(
+    "is_holiday_aligned",
+    when(
+        col("start_date").cast("string").isin(holidays_2024) |
+        col("end_date").cast("string").isin(holidays_2024),
+        1
+    ).otherwise(0)
+)
+
+# 3.7: Promotion timing flags
+print("🔧 Analyzing promotion timing...")
+
+transformed_df = transformed_df.withColumn(
+    "is_month_start_promo",
+    when(dayofmonth("start_date") <= 5, 1).otherwise(0)
+)
+
+transformed_df = transformed_df.withColumn(
+    "is_month_end_promo",
+    when(dayofmonth("start_date") >= 25, 1).otherwise(0)
+)
+
+# 3.8: Calculate promotion intensity score
+print("🔧 Calculating promotion intensity...")
+
+transformed_df = transformed_df.withColumn(
+    "promo_intensity_score",
+    (col("discount_percentage") * col("promo_duration_days") * col("budget_per_day")) / 1000
+)
+
+# 3.9: Active status
+print("🔧 Checking active status...")
+
+transformed_df = transformed_df.withColumn(
+    "is_currently_active",
+    when(
+        (col("start_date") <= current_date()) & 
+        (col("end_date") >= current_date()),
+        1
+    ).otherwise(0)
+)
+
+# 3.10: Days until start/end
+transformed_df = transformed_df \
+    .withColumn("days_until_start", datediff(col("start_date"), current_date())) \
+    .withColumn("days_until_end", datediff(col("end_date"), current_date()))
+
+print("✅ Business transformations complete")
+
+# ============================================================================
+# STEP 4: ENRICHMENT - JOIN WITH PRODUCT MASTER
+# ============================================================================
+
+print("\n" + "=" * 80)
+print("STEP 4: ENRICHING WITH PRODUCT MASTER DATA")
+print("=" * 80)
+
+# Join with product master
+enriched_df = transformed_df.alias("promo").join(
+    product_master_df.alias("prod"),
+    col("promo.product_id") == col("prod.product_id"),
+    "left"
+)
+
+# Select and rename columns to avoid ambiguity
+enriched_df = enriched_df.select(
+    # Promotion columns
+    col("promo.*"),
+    
+    # Product master columns (with prefix)
+    col("prod.product_name").alias("master_product_name"),
+    col("prod.brand").alias("master_brand"),
+    col("prod.category").alias("master_category"),
+    col("prod.subcategory"),
+    col("prod.unit_price").alias("master_unit_price"),
+    col("prod.cost_price"),
+    col("prod.supplier"),
+    col("prod.pack_size"),
+    col("prod.uom")
+)
+
+# Calculate margins
+print("\n🔧 Calculating margin impact...")
+
+enriched_df = enriched_df.withColumn(
+    "margin_before_promo",
+    col("master_unit_price") - col("cost_price")
+)
+
+enriched_df = enriched_df.withColumn(
+    "discounted_price",
+    col("master_unit_price") * (1 - col("discount_percentage") / 100)
+)
+
+enriched_df = enriched_df.withColumn(
+    "margin_after_promo",
+    col("discounted_price") - col("cost_price")
+)
+
+enriched_df = enriched_df.withColumn(
+    "margin_erosion_pct",
+    ((col("margin_before_promo") - col("margin_after_promo")) / col("margin_before_promo")) * 100
+)
+
+enriched_df = enriched_df.withColumn(
+    "margin_erosion_usd",
+    col("margin_before_promo") - col("margin_after_promo")
+)
+
+# Effective discount rate (accounting for original price)
+enriched_df = enriched_df.withColumn(
+    "effective_discount_usd",
+    col("master_unit_price") - col("discounted_price")
+)
+
+# Check for unprofitable promotions
+enriched_df = enriched_df.withColumn(
+    "is_unprofitable",
+    when(col("margin_after_promo") <= 0, 1).otherwise(0)
+)
+
+# Count products without master data
+missing_product_data = enriched_df.filter(col("master_product_name").isNull()).count()
+if missing_product_data > 0:
+    print(f"⚠️  WARNING: {missing_product_data:,} promotions missing product master data")
+
+print("✅ Product enrichment complete")
+
+# ============================================================================
+# STEP 5: ENRICHMENT - JOIN WITH STORE MASTER (if store_id exists)
+# ============================================================================
+
+print("\n" + "=" * 80)
+print("STEP 5: ENRICHING WITH STORE DATA")
+print("=" * 80)
+
+# Note: Promotions might not have store_id if they're region-wide
+# Check if store_id column exists
+
+if "store_id" in enriched_df.columns:
+    print("🔧 Joining with store master...")
+    
+    final_df = enriched_df.alias("promo").join(
+        store_master_df.alias("store"),
+        col("promo.store_id") == col("store.store_id"),
+        "left"
+    )
+    
+    final_df = final_df.select(
+        col("promo.*"),
+        col("store.store_name"),
+        col("store.store_type"),
+        col("store.state"),
+        col("store.city"),
+        col("store.size_sqft"),
+        col("store.avg_daily_foottraffic")
+    )
+    
+    # Calculate potential reach
+    final_df = final_df.withColumn(
+        "potential_customer_reach",
+        col("avg_daily_foottraffic") * col("promo_duration_days")
+    )
+    
+    print("✅ Store enrichment complete")
+else:
+    print("ℹ️  No store_id column - skipping store enrichment")
+    final_df = enriched_df
+
+# ============================================================================
+# STEP 6: DERIVED BUSINESS METRICS
+# ============================================================================
+
+print("\n" + "=" * 80)
+print("STEP 6: CALCULATING DERIVED METRICS")
+print("=" * 80)
+
+# 6.1: ROI Indicators
+print("🔧 Calculating ROI indicators...")
+
+# Expected breakeven units (how many units need to be sold to cover promo cost)
+final_df = final_df.withColumn(
+    "breakeven_units",
+    when(col("margin_after_promo") > 0,
+         col("budget_usd") / col("margin_after_promo"))
+    .otherwise(None)
+)
+
+# Expected breakeven daily sales
+final_df = final_df.withColumn(
+    "breakeven_daily_sales",
+    when(col("promo_duration_days") > 0,
+         col("breakeven_units") / col("promo_duration_days"))
+    .otherwise(None)
+)
+
+# 6.2: Risk Flags
+print("🔧 Adding risk flags...")
+
+final_df = final_df.withColumn(
+    "high_risk_flag",
+    when(
+        (col("is_unprofitable") == 1) |
+        (col("margin_erosion_pct") > 75) |
+        (col("discount_percentage") > 60),
+        1
+    ).otherwise(0)
+)
+
+final_df = final_df.withColumn(
+    "risk_category",
+    when(col("is_unprofitable") == 1, "Unprofitable")
+    .when(col("margin_erosion_pct") > 75, "High Margin Erosion")
+    .when(col("discount_percentage") > 60, "Deep Discount")
+    .otherwise("Normal")
+)
+
+# 6.3: Value Flags
+print("🔧 Categorizing promotion value...")
+
+final_df = final_df.withColumn(
+    "value_tier",
+    when(col("budget_usd") < 10000, "Low Value")
+    .when((col("budget_usd") >= 10000) & (col("budget_usd") < 50000), "Medium Value")
+    .when((col("budget_usd") >= 50000) & (col("budget_usd") < 100000), "High Value")
+    .otherwise("Strategic")
+)
+
+# ============================================================================
+# STEP 7: ADD SILVER METADATA
+# ============================================================================
+
+print("\n" + "=" * 80)
+print("STEP 7: ADDING METADATA")
+print("=" * 80)
+
+final_df = final_df \
+    .withColumn("silver_processing_timestamp", current_timestamp()) \
+    .withColumn("silver_processing_date", current_date()) \
+    .withColumn("data_quality_layer", lit("SILVER")) \
+    .withColumn("silver_job_run_id", lit(args.get('JOB_RUN_ID', 'manual')))
+
+final_count = final_df.count()
+
+print(f"\n✅ Final Silver record count: {final_count:,}")
+
+# ============================================================================
+# STEP 8: DATA QUALITY VALIDATION
+# ============================================================================
+
+print("\n" + "=" * 80)
+print("STEP 8: SILVER LAYER DATA QUALITY VALIDATION")
+print("=" * 80)
+
+# Quality checks
+print("\n🔍 Running quality checks...")
+
+# Check 1: Unprofitable promotions
+unprofitable_count = final_df.filter(col("is_unprofitable") == 1).count()
+unprofitable_pct = (unprofitable_count / final_count) * 100
+
+print(f"\n📊 Unprofitable Promotions: {unprofitable_count:,} ({unprofitable_pct:.2f}%)")
+
+if unprofitable_pct > 10:
+    warning_msg = f"⚠️  HIGH WARNING: {unprofitable_pct:.2f}% of promotions are unprofitable!"
+    print(warning_msg)
+    
+    # Send alert
+    sns.publish(
+        TopicArn=SNS_TOPIC,
+        Subject="⚠️  Data Quality Alert - High Unprofitable Promotions",
+        Message=f"{warning_msg}\n\nTotal: {final_count:,}\nUnprofitable: {unprofitable_count:,}"
+    )
+
+# Check 2: Missing master data
+missing_master = final_df.filter(col("master_product_name").isNull()).count()
+missing_master_pct = (missing_master / final_count) * 100
+
+print(f"📊 Missing Product Master: {missing_master:,} ({missing_master_pct:.2f}%)")
+
+# Check 3: Data freshness
+latest_ingestion = final_df.agg(max("ingestion_timestamp")).collect()[0][0]
+print(f"📊 Latest Data Ingestion: {latest_ingestion}")
+
+# Check 4: High-risk promotions
+high_risk_count = final_df.filter(col("high_risk_flag") == 1).count()
+high_risk_pct = (high_risk_count / final_count) * 100
+
+print(f"📊 High Risk Promotions: {high_risk_count:,} ({high_risk_pct:.2f}%)")
+
+# Summary statistics
+print("\n📊 Silver Layer Summary Statistics:")
+summary_stats = final_df.select(
+    count("*").alias("total_promotions"),
+    avg("discount_percentage").alias("avg_discount_pct"),
+    avg("budget_usd").alias("avg_budget"),
+    avg("promo_duration_days").alias("avg_duration_days"),
+    sum("budget_usd").alias("total_budget"),
+    countDistinct("master_brand").alias("unique_brands"),
+    countDistinct("master_category").alias("unique_categories")
+).collect()[0]
+
+print(f"   Total Promotions: {summary_stats['total_promotions']:,}")
+print(f"   Avg Discount: {summary_stats['avg_discount_pct']:.2f}%")
+print(f"   Avg Budget: ${summary_stats['avg_budget']:,.2f}")
+print(f"   Avg Duration: {summary_stats['avg_duration_days']:.1f} days")
+print(f"   Total Budget: ${summary_stats['total_budget']:,.2f}")
+print(f"   Unique Brands: {summary_stats['unique_brands']}")
+print(f"   Unique Categories: {summary_stats['unique_categories']}")
+
+# ============================================================================
+# STEP 9: WRITE TO SILVER LAYER (S3)
+# ============================================================================
+
+print("\n" + "=" * 80)
+print("STEP 9: WRITING TO SILVER LAYER")
+print("=" * 80)
+
+print(f"\n💾 Output Path: {SILVER_OUTPUT_PATH}")
+
+try:
+    # Write to S3 as Parquet (partitioned for performance)
+    final_df.write \
+        .format("parquet") \
+        .mode("overwrite") \
+        .partitionBy("promo_start_year", "promo_start_month") \
+        .option("compression", "snappy") \
+        .save(SILVER_OUTPUT_PATH)
+    
+    print("✅ Data written to Silver S3 location!")
+    
+except Exception as e:
+    error_msg = f"❌ Failed to write Silver data: {str(e)}"
+    print(error_msg)
+    
+    sns.publish(
+        TopicArn=SNS_TOPIC,
+        Subject="🚨 Silver Layer Write Failed",
+        Message=error_msg
+    )
+    
+    raise Exception(error_msg)
+
+# ============================================================================
+# STEP 10: UPDATE GLUE DATA CATALOG
+# ============================================================================
+
+print("\n" + "=" * 80)
+print("STEP 10: UPDATING GLUE DATA CATALOG")
+print("=" * 80)
+
+try:
+    # Convert to DynamicFrame for catalog update
+    final_dynamic_frame = DynamicFrame.fromDF(final_df, glueContext, "final_df")
+    
+    # Write to catalog
+    datasink = glueContext.getSink(
+        connection_type="s3",
+        path=SILVER_OUTPUT_PATH,
+        enableUpdateCatalog=True,
+        updateBehavior="UPDATE_IN_DATABASE",
+        partitionKeys=["promo_start_year", "promo_start_month"]
+    )
+    
+    datasink.setFormat("parquet")
+    datasink.setCatalogInfo(
+        catalogDatabase=SILVER_CATALOG_DATABASE,
+        catalogTableName=SILVER_CATALOG_TABLE
+    )
+    
+    datasink.writeFrame(final_dynamic_frame)
+    
+    print(f"✅ Glue Data Catalog updated:")
+    print(f"   Database: {SILVER_CATALOG_DATABASE}")
+    print(f"   Table: {SILVER_CATALOG_TABLE}")
+    
+except Exception as e:
+    print(f"⚠️  Catalog update warning: {str(e)}")
+
+# ============================================================================
+# STEP 11: SEND METRICS TO CLOUDWATCH
+# ============================================================================
+
+print("\n" + "=" * 80)
+print("STEP 11: LOGGING METRICS TO CLOUDWATCH")
+print("=" * 80)
+
+try:
+    cloudwatch.put_metric_data(
+        Namespace='DPA/DataQuality/Silver',
+        MetricData=[
+            {
+                'MetricName': 'RecordsProcessed',
+                'Value': final_count,
+                'Unit': 'Count',
+                'Dimensions': [{'Name': 'Layer', 'Value': 'Silver'}]
+            },
+            {
+                'MetricName': 'UnprofitablePromotions',
+                'Value': unprofitable_count,
+                'Unit': 'Count'
+            },
+            {
+                'MetricName': 'UnprofitablePercentage',
+                'Value': unprofitable_pct,
+                'Unit': 'Percent'
+            },
+            {
+                'MetricName': 'HighRiskPromotions',
+                'Value': high_risk_count,
+                'Unit': 'Count'
+            },
+            {
+                'MetricName': 'TotalPromoBudget',
+                'Value': float(summary_stats['total_budget']),
+                'Unit': 'None'
+            },
+            {
+                'MetricName': 'AverageDiscount',
+                'Value': float(summary_stats['avg_discount_pct']),
+                'Unit': 'Percent'
+            }
+        ]
+    )
+    
+    print("✅ Metrics sent to CloudWatch")
+    
+except Exception as e:
+    print(f"⚠️  CloudWatch metrics warning: {str(e)}")
+
+# ============================================================================
+# STEP 12: SUCCESS NOTIFICATION
+# ============================================================================
+
+print("\n" + "=" * 80)
+print("STEP 12: SENDING SUCCESS NOTIFICATION")
+print("=" * 80)
+
+success_message = f"""
+✅ SILVER LAYER TRANSFORMATION COMPLETE
+
+📊 Processing Summary:
+────────────────────────────────────────
+Bronze Records:           {initial_count:,}
+Silver Records:           {final_count:,}
+Records Removed:          {initial_count - final_count:,}
+
+📈 Business Metrics:
+────────────────────────────────────────
+Total Promo Budget:       ${summary_stats['total_budget']:,.2f}
+Average Discount:         {summary_stats['avg_discount_pct']:.2f}%
+Average Duration:         {summary_stats['avg_duration_days']:.1f} days
+Unique Brands:            {summary_stats['unique_brands']}
+Unique Categories:        {summary_stats['unique_categories']}
+
+⚠️  Quality Flags:
+────────────────────────────────────────
+Unprofitable Promos:      {unprofitable_count:,} ({unprofitable_pct:.2f}%)
+High Risk Promos:         {high_risk_count:,} ({high_risk_pct:.2f}%)
+Missing Master Data:      {missing_master:,} ({missing_master_pct:.2f}%)
+
+📂 Output:
+────────────────────────────────────────
+Location:                 {SILVER_OUTPUT_PATH}
+Catalog:                  {SILVER_CATALOG_DATABASE}.{SILVER_CATALOG_TABLE}
+Format:                   Parquet (Snappy compressed)
+Partitions:               promo_start_year, promo_start_month
+
+⏰ Execution:
+────────────────────────────────────────
+Job:                      {args['JOB_NAME']}
+Run ID:                   {args.get('JOB_RUN_ID', 'manual')}
+Timestamp:                {datetime.utcnow().isoformat()}
+
+"""
+
+print(success_message)
+
+# Send SNS notification
+try:
+    sns.publish(
+        TopicArn=SNS_TOPIC,
+        Subject="✅ Silver Layer Transformation Success",
+        Message=success_message
+    )
+    print("✅ SNS notification sent")
+except Exception as e:
+    print(f"⚠️  SNS notification warning: {str(e)}")
+
+# ============================================================================
+# JOB COMPLETE
+# ============================================================================
+
+print("\n" + "=" * 80)
+print("🎉 SILVER LAYER TRANSFORMATION COMPLETE!")
+print("=" * 80)
+
+job.commit()
+```
+
+---
+
+## 📤 **STEP 3: DEPLOY & TEST SILVER LAYER JOB**
+
+### **Upload Script:**
+
+```bash
+# Upload to S3
+aws s3 cp glue_silver_promo_transformation.py s3://dpa-glue-scripts/silver/ --profile dpa-prod
+```
+
+### **Create Glue Job:**
+
+```bash
+aws glue create-job \
+    --name silver-promo-transformation \
+    --role arn:aws:iam::123456789012:role/AWSGlueServiceRole \
+    --command Name=glueetl,ScriptLocation=s3://dpa-glue-scripts/silver/glue_silver_promo_transformation.py,PythonVersion=3 \
+    --default-arguments '{
+        "--job-bookmark-option":"job-bookmark-enable",
+        "--enable-metrics":"true",
+        "--enable-continuous-cloudwatch-log":"true",
+        "--enable-spark-ui":"true",
+        "--spark-event-logs-path":"s3://dpa-glue-temp/sparkui/",
+        "--TempDir":"s3://dpa-glue-temp/"
+    }' \
+    --max-retries 2 \
+    --timeout 120 \
+    --glue-version "4.0" \
+    --number-of-workers 10 \
+    --worker-type G.1X \
+    --profile dpa-prod
+
+# Output:
+{
+    "Name": "silver-promo-transformation"
+}
+```
+
+### **Run the Job:**
+
+```bash
+# Trigger job
+aws glue start-job-run --job-name silver-promo-transformation --profile dpa-prod
+
+# Output:
+{
+    "JobRunId": "jr_silver_abc123xyz789"
+}
+
+# Monitor job
+aws glue get-job-run \
+    --job-name silver-promo-transformation \
+    --run-id jr_silver_abc123xyz789 \
+    --profile dpa-prod
+```
+
+---
+
+## 📊 **MONITOR IN CLOUDWATCH**
+
+```bash
+# Tail logs
+aws logs tail /aws-glue/jobs/silver-promo-transformation --follow --profile dpa-prod
+```
+
+**Output:**
+
+```
+[2024-02-10 16:45:23] ============================================================
+[2024-02-10 16:45:23] 🥈 SILVER LAYER TRANSFORMATION - PROMOTIONS
+[2024-02-10 16:45:23] ============================================================
+[2024-02-10 16:45:28] ✅ Bronze Promotions: 45,444 records
+[2024-02-10 16:45:32] ✅ Product Master: 5,234 products
+[2024-02-10 16:45:34] ✅ Store Master: 2,156 stores
+[2024-02-10 16:45:45] ✅ After cleaning: 45,444 records
+[2024-02-10 16:46:12] ✅ Business transformations complete
+[2024-02-10 16:46:28] ✅ Product enrichment complete
+[2024-02-10 16:46:35] ✅ Store enrichment complete
+[2024-02-10 16:46:52] 📊 Unprofitable Promotions: 234 (0.52%)
+[2024-02-10 16:46:54] 📊 High Risk Promotions: 567 (1.25%)
+[2024-02-10 16:47:15] ✅ Data written to Silver S3 location!
+[2024-02-10 16:47:20] ✅ Glue Data Catalog updated
+[2024-02-10 16:47:22] ✅ Metrics sent to CloudWatch
+[2024-02-10 16:47:25] 🎉 SILVER LAYER TRANSFORMATION COMPLETE!
+```
+
+---
+
+## ✅ **YOU RECEIVE EMAIL:**
+
+```
+From: AWS SNS <no-reply@sns.amazonaws.com>
+Subject: ✅ Silver Layer Transformation Success
+
+✅ SILVER LAYER TRANSFORMATION COMPLETE
+
+📊 Processing Summary:
+────────────────────────────────────────
+Bronze Records:           45,444
+Silver Records:           45,444
+Records Removed:          0
+
+📈 Business Metrics:
+────────────────────────────────────────
+Total Promo Budget:       $125,678,345.00
+Average Discount:         23.45%
+Average Duration:         12.3 days
+Unique Brands:            45
+Unique Categories:        12
+
+⚠️  Quality Flags:
+────────────────────────────────────────
+Unprofitable Promos:      234 (0.52%)
+High Risk Promos:         567 (1.25%)
+Missing Master Data:      0 (0.00%)
+
+📂 Output:
+────────────────────────────────────────
+Location:                 s3://dpa-silver/promotions_enriched/
+Catalog:                  silver_db.promotions_enriched
+Format:                   Parquet (Snappy compressed)
+```
+
+---
+
+## 🔍 **VERIFY SILVER DATA**
+
+### **Query with Athena:**
+
+```sql
+-- Create Athena database if not exists
+CREATE DATABASE IF NOT EXISTS silver_db;
+
+-- Query Silver data
+SELECT 
+    promo_start_year,
+    promo_start_month_name,
+    master_category,
+    COUNT(*) as promo_count,
+    AVG(discount_percentage) as avg_discount,
+    SUM(budget_usd) as total_budget,
+    SUM(CASE WHEN is_unprofitable = 1 THEN 1 ELSE 0 END) as unprofitable_count
+FROM silver_db.promotions_enriched
+GROUP BY promo_start_year, promo_start_month_name, master_category
+ORDER BY promo_start_year, promo_start_month, total_budget DESC;
+```
+
+---
+
+## 📈 **CLOUDWATCH DASHBOARD**
+
+**Create custom dashboard:**
+
+```bash
+# CloudWatch → Dashboards → Create Dashboard
+
+Widgets:
+├─ Line Chart: Silver Records Processed (daily)
+├─ Number: Total Promotions in Silver
+├─ Number: Unprofitable Promotions %
+├─ Line Chart: Average Discount Trend
+├─ Pie Chart: Promotions by Category
+└─ Table: Top 10 Brands by Budget
+```
+
+---
+
+## ✅ **SILVER LAYER COMPLETE!**
+
+**Next steps available:**
+1. **Gold Layer (Snowflake + dbt)** ← Most common next step
+2. **Streaming Layer (Kinesis + Lambda)**
+3. **ML Pipeline (SageMaker)**
+4. **Orchestration (Airflow MWAA)**
+
+**Which one do you want next?** 🚀
