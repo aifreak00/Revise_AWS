@@ -1,0 +1,801 @@
+# 🌊 COMPLETE REAL-TIME STREAMING PIPELINE - KAFKA + AWS STACK
+
+Let me show you **COMPLETE END-TO-END REAL-TIME STREAMING** using **Apache Kafka (Amazon MSK)** + AWS Stack for CPG promotional analytics!
+
+---
+
+## 📋 **JIRA EPIC: REAL-TIME STREAMING**
+
+```
+╔═══════════════════════════════════════════════════════════════╗
+║  EPIC-60: Real-Time Promotional Tracking & Analytics         ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  Business Objective:                                          ║
+║  Track promotions in real-time to enable instant insights    ║
+║  and immediate marketing decisions                           ║
+║                                                               ║
+║  Stories:                                                     ║
+║  ├─ CPG-601: Set up Amazon MSK (Kafka) Cluster     [8 pts]  ║
+║  ├─ CPG-602: Build Kafka Producers (POS/IoT data)  [5 pts]  ║
+║  ├─ CPG-603: Kafka Consumers (Lambda/Flink)        [13 pts] ║
+║  ├─ CPG-604: Stream to Snowflake (Real-time)       [8 pts]  ║
+║  ├─ CPG-605: Real-time ML Inference                [8 pts]  ║
+║  ├─ CPG-606: Real-time Dashboards                  [5 pts]  ║
+║  └─ CPG-607: Monitoring & Alerts                   [5 pts]  ║
+║                                                               ║
+║  Total: 52 story points (3 sprints)                          ║
+║  Team: You + Raj (Streaming expert)                          ║
+║                                                               ║
+║  Expected Business Impact:                                    ║
+║  • <5 second latency from POS to dashboard                   ║
+║  • Real-time fraud detection                                 ║
+║  • Instant promotional effectiveness tracking                ║
+║  • 30% faster marketing decisions                            ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
+---
+
+## 🏗️ **COMPLETE STREAMING ARCHITECTURE**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    DATA SOURCES (Real-time)                     │
+├─────────────────────────────────────────────────────────────────┤
+│  • POS Transactions (5000+ stores)                              │
+│  • Mobile App Events (user behavior)                            │
+│  • IoT Sensors (store foot traffic, shelf sensors)              │
+│  • Website Clickstream (e-commerce)                             │
+│  • Inventory Updates (stock levels)                             │
+└────────┬────────────────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              KAFKA PRODUCERS (Event Publishers)                 │
+├─────────────────────────────────────────────────────────────────┤
+│  • Python Producer (POS terminals)                              │
+│  • Java Producer (Mobile apps)                                  │
+│  • IoT Core → Lambda → Kafka (Sensors)                         │
+│  Rate: ~10,000 events/second peak                              │
+└────────┬────────────────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│           AMAZON MSK (Managed Streaming for Kafka)              │
+├─────────────────────────────────────────────────────────────────┤
+│  Cluster: dpa-kafka-prod                                        │
+│  Brokers: 3 nodes (Multi-AZ)                                    │
+│  Instance: kafka.m5.large                                       │
+│                                                                  │
+│  TOPICS:                                                         │
+│  ├─ transactions-stream      (Partitions: 12, Retention: 7d)   │
+│  ├─ promo-events             (Partitions: 6,  Retention: 7d)   │
+│  ├─ inventory-updates        (Partitions: 6,  Retention: 7d)   │
+│  ├─ customer-behavior        (Partitions: 12, Retention: 3d)   │
+│  └─ fraud-alerts             (Partitions: 3,  Retention: 30d)  │
+└────────┬────────────────────────────────────────────────────────┘
+         │
+         ├──────────────┬───────────────────┬──────────────────────┐
+         ▼              ▼                   ▼                      ▼
+┌──────────────┐ ┌────────────────┐ ┌──────────────┐ ┌────────────┐
+│ LAMBDA       │ │ KINESIS DATA   │ │ FLINK (KDA)  │ │ LAMBDA     │
+│ CONSUMER     │ │ ANALYTICS      │ │ (Advanced    │ │ ML         │
+│              │ │ (SQL on        │ │  Processing) │ │ INFERENCE  │
+│ • Simple     │ │  Streams)      │ │              │ │            │
+│   transform  │ │                │ │ • Windowing  │ │ • Real-time│
+│ • Enrichment │ │ • Aggregations │ │ • Joins      │ │   scoring  │
+│ • Filtering  │ │ • Alerts       │ │ • Complex    │ │ • Fraud    │
+│              │ │                │ │   CEP        │ │   detection│
+└──────┬───────┘ └────────┬───────┘ └──────┬───────┘ └─────┬──────┘
+       │                  │                 │               │
+       └──────────────────┴─────────────────┴───────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              DATA SINKS (Storage & Analytics)                   │
+├─────────────────────────────────────────────────────────────────┤
+│  • S3 (Data Lake - Parquet, partitioned by hour)               │
+│  • Snowflake (Real-time tables via Snowpipe Streaming)         │
+│  • DynamoDB (Operational queries, <10ms lookups)               │
+│  • OpenSearch (Log analytics, full-text search)                │
+│  • CloudWatch (Metrics & Monitoring)                            │
+└────────┬────────────────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              CONSUMPTION LAYER                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  • QuickSight (Real-time dashboards, auto-refresh 1 min)       │
+│  • Grafana (Operational metrics)                                │
+│  • Slack/SNS (Real-time alerts)                                │
+│  • REST API (Query real-time metrics)                           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🚀 **CPG-601: SET UP AMAZON MSK (KAFKA CLUSTER)**
+
+### **Step 1: Create MSK Cluster via AWS Console**
+
+**AWS Console → Amazon MSK → Create cluster**
+
+```
+╔═══════════════════════════════════════════════════════════════╗
+║  Create Amazon MSK Cluster                                    ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  Cluster name: [dpa-kafka-prod_____________]                 ║
+║                                                               ║
+║  Apache Kafka version: [3.5.1_______] ▼                      ║
+║                                                               ║
+║  Broker type: [kafka.m5.large____] ▼                         ║
+║  Number of brokers: [3____] (1 per AZ)                       ║
+║                                                               ║
+║  Storage per broker: [100___] GB                             ║
+║  Storage type: [Provisioned IOPS (io1)] ▼                    ║
+║                                                               ║
+║  VPC: [vpc-12345abc___________] ▼                            ║
+║  Subnets: [Select 3 private subnets] ▼                       ║
+║  Security groups: [kafka-sg_______] ▼                        ║
+║                                                               ║
+║  Encryption:                                                  ║
+║  ☑ Enable in-transit encryption (TLS)                        ║
+║  ☑ Enable at-rest encryption (KMS)                           ║
+║                                                               ║
+║  Authentication:                                              ║
+║  ☑ IAM role-based authentication                             ║
+║  ☑ SASL/SCRAM authentication                                 ║
+║                                                               ║
+║  Monitoring:                                                  ║
+║  ☑ Enhanced monitoring (PER_BROKER)                          ║
+║  ☑ Open monitoring with Prometheus                           ║
+║                                                               ║
+║  Logging:                                                     ║
+║  ☑ CloudWatch Logs                                           ║
+║  ☑ S3 bucket: s3://dpa-kafka-logs                           ║
+║                                                               ║
+║  Configuration:                                               ║
+║  [Use custom configuration] ▼                                ║
+║                                                               ║
+║                      [Create cluster]                         ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
+**Wait ~30 minutes for cluster creation**
+
+---
+
+### **Step 2: Create Kafka Topics**
+
+**Install Kafka Client Tools:**
+
+```bash
+# On EC2 instance or local machine
+
+# Install Java
+sudo yum install java-11-amazon-corretto -y
+
+# Download Kafka
+wget https://archive.apache.org/dist/kafka/3.5.1/kafka_2.13-3.5.1.tgz
+tar -xzf kafka_2.13-3.5.1.tgz
+cd kafka_2.13-3.5.1
+
+# Get MSK Bootstrap Servers
+aws kafka get-bootstrap-brokers --cluster-arn arn:aws:kafka:us-east-1:123456789012:cluster/dpa-kafka-prod/abc-123
+
+# Output:
+# BootstrapBrokerString: "b-1.dpa-kafka-prod.abc123.kafka.us-east-1.amazonaws.com:9092,b-2.dpa-kafka-prod.abc123.kafka.us-east-1.amazonaws.com:9092,b-3.dpa-kafka-prod.abc123.kafka.us-east-1.amazonaws.com:9092"
+
+export BOOTSTRAP_SERVERS="b-1.dpa-kafka-prod.abc123.kafka.us-east-1.amazonaws.com:9092,b-2.dpa-kafka-prod.abc123.kafka.us-east-1.amazonaws.com:9092,b-3.dpa-kafka-prod.abc123.kafka.us-east-1.amazonaws.com:9092"
+```
+
+**Create Topics:**
+
+```bash
+# Create transactions topic
+bin/kafka-topics.sh \
+    --bootstrap-server $BOOTSTRAP_SERVERS \
+    --create \
+    --topic transactions-stream \
+    --partitions 12 \
+    --replication-factor 3 \
+    --config retention.ms=604800000 \
+    --config compression.type=snappy \
+    --config min.insync.replicas=2
+
+# Output:
+# Created topic transactions-stream.
+
+# Create promo events topic
+bin/kafka-topics.sh \
+    --bootstrap-server $BOOTSTRAP_SERVERS \
+    --create \
+    --topic promo-events \
+    --partitions 6 \
+    --replication-factor 3 \
+    --config retention.ms=604800000
+
+# Create inventory updates topic
+bin/kafka-topics.sh \
+    --bootstrap-server $BOOTSTRAP_SERVERS \
+    --create \
+    --topic inventory-updates \
+    --partitions 6 \
+    --replication-factor 3 \
+    --config retention.ms=604800000
+
+# Create customer behavior topic
+bin/kafka-topics.sh \
+    --bootstrap-server $BOOTSTRAP_SERVERS \
+    --create \
+    --topic customer-behavior \
+    --partitions 12 \
+    --replication-factor 3 \
+    --config retention.ms=259200000
+
+# Create fraud alerts topic
+bin/kafka-topics.sh \
+    --bootstrap-server $BOOTSTRAP_SERVERS \
+    --create \
+    --topic fraud-alerts \
+    --partitions 3 \
+    --replication-factor 3 \
+    --config retention.ms=2592000000
+
+# List all topics
+bin/kafka-topics.sh \
+    --bootstrap-server $BOOTSTRAP_SERVERS \
+    --list
+
+# Output:
+# customer-behavior
+# fraud-alerts
+# inventory-updates
+# promo-events
+# transactions-stream
+```
+
+✅ **Kafka cluster & topics ready!**
+
+---
+
+## 📊 **CPG-602: BUILD KAFKA PRODUCERS**
+
+### **Producer 1: POS Transaction Producer (Python)**
+
+**File: `kafka_producer_transactions.py`**
+
+```python
+"""
+Kafka Producer: Real-time POS Transactions
+───────────────────────────────────────────
+Purpose: Stream transaction data from POS terminals to Kafka
+Simulates: 5000+ stores, ~10 transactions/second
+"""
+
+from kafka import KafkaProducer
+from kafka.errors import KafkaError
+import json
+import time
+import random
+from datetime import datetime, timedelta
+import uuid
+
+print("=" * 80)
+print("🏪 POS TRANSACTION PRODUCER - STARTING")
+print("=" * 80)
+
+# ============================================================================
+# KAFKA CONFIGURATION
+# ============================================================================
+
+BOOTSTRAP_SERVERS = [
+    'b-1.dpa-kafka-prod.abc123.kafka.us-east-1.amazonaws.com:9092',
+    'b-2.dpa-kafka-prod.abc123.kafka.us-east-1.amazonaws.com:9092',
+    'b-3.dpa-kafka-prod.abc123.kafka.us-east-1.amazonaws.com:9092'
+]
+
+TOPIC = 'transactions-stream'
+
+# Create producer
+producer = KafkaProducer(
+    bootstrap_servers=BOOTSTRAP_SERVERS,
+    value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+    key_serializer=lambda k: k.encode('utf-8') if k else None,
+    compression_type='snappy',
+    acks='all',  # Wait for all replicas
+    retries=3,
+    max_in_flight_requests_per_connection=5,
+    batch_size=16384,
+    linger_ms=10,  # Wait 10ms to batch messages
+    buffer_memory=33554432  # 32MB buffer
+)
+
+print(f"✅ Connected to Kafka cluster")
+print(f"📤 Publishing to topic: {TOPIC}")
+
+# ============================================================================
+# SAMPLE DATA
+# ============================================================================
+
+STORES = [f"ST_{str(i).zfill(4)}" for i in range(1, 5001)]  # 5000 stores
+REGIONS = ['Northeast', 'Southeast', 'Midwest', 'Southwest', 'West']
+
+PRODUCTS = [
+    {'id': 'SKU_1234', 'name': 'Dove Body Wash 500ml', 'brand': 'Dove', 'category': 'Personal Care', 'price': 12.99, 'cost': 6.50},
+    {'id': 'SKU_5678', 'name': 'Axe Deodorant 150ml', 'brand': 'Axe', 'category': 'Personal Care', 'price': 8.49, 'cost': 4.20},
+    {'id': 'SKU_9101', 'name': 'Knorr Soup Mix', 'brand': 'Knorr', 'category': 'Food', 'price': 3.99, 'cost': 1.80},
+    {'id': 'SKU_1121', 'name': 'Lipton Green Tea', 'brand': 'Lipton', 'category': 'Beverages', 'price': 5.99, 'cost': 2.90},
+    {'id': 'SKU_3141', 'name': "Ben & Jerry's Ice Cream", 'brand': "Ben & Jerry's", 'category': 'Food', 'price': 7.99, 'cost': 3.50},
+    {'id': 'SKU_5161', 'name': 'Hellmanns Mayo', 'brand': 'Hellmanns', 'category': 'Food', 'price': 6.49, 'cost': 3.10},
+    {'id': 'SKU_7181', 'name': 'Dove Shampoo', 'brand': 'Dove', 'category': 'Personal Care', 'price': 9.99, 'cost': 5.00},
+    {'id': 'SKU_9201', 'name': 'Breyers Ice Cream', 'brand': 'Breyers', 'category': 'Food', 'price': 6.99, 'cost': 3.20}
+]
+
+PAYMENT_METHODS = ['Credit Card', 'Debit Card', 'Cash', 'Mobile Payment', 'Gift Card']
+
+PROMOTIONS = [
+    {'id': 'PROMO_001', 'type': 'Discount', 'discount_pct': 15},
+    {'id': 'PROMO_002', 'type': 'BOGO', 'discount_pct': 50},
+    {'id': 'PROMO_003', 'type': 'Bundle', 'discount_pct': 20},
+    None  # No promotion
+]
+
+# ============================================================================
+# TRANSACTION GENERATOR
+# ============================================================================
+
+def generate_transaction():
+    """Generate realistic transaction event"""
+    
+    store_id = random.choice(STORES)
+    product = random.choice(PRODUCTS)
+    promotion = random.choice(PROMOTIONS)
+    
+    # Quantity (weighted toward 1-3 items)
+    quantity = random.choices([1, 2, 3, 4, 5], weights=[40, 30, 15, 10, 5])[0]
+    
+    # Calculate amount
+    unit_price = product['price']
+    
+    if promotion:
+        discount_amount = unit_price * (promotion['discount_pct'] / 100) * quantity
+        total_amount = (unit_price * quantity) - discount_amount
+    else:
+        discount_amount = 0
+        total_amount = unit_price * quantity
+    
+    # Fraud simulation (0.5% of transactions)
+    is_fraud = random.random() < 0.005
+    
+    # Generate transaction
+    transaction = {
+        'transaction_id': str(uuid.uuid4()),
+        'timestamp': datetime.utcnow().isoformat() + 'Z',
+        'store_id': store_id,
+        'region': random.choice(REGIONS),
+        'product_id': product['id'],
+        'product_name': product['name'],
+        'brand': product['brand'],
+        'category': product['category'],
+        'quantity': quantity,
+        'unit_price': unit_price,
+        'total_amount': round(total_amount, 2),
+        'discount_amount': round(discount_amount, 2),
+        'payment_method': random.choice(PAYMENT_METHODS),
+        'customer_id': f"CUST_{random.randint(10000, 99999)}",
+        'is_fraud': is_fraud,
+        'event_type': 'transaction',
+        'source': 'POS',
+        'version': '1.0'
+    }
+    
+    if promotion:
+        transaction['promotion_id'] = promotion['id']
+        transaction['promotion_type'] = promotion['type']
+        transaction['discount_percentage'] = promotion['discount_pct']
+    
+    return transaction
+
+# ============================================================================
+# PRODUCE MESSAGES
+# ============================================================================
+
+message_count = 0
+start_time = time.time()
+
+try:
+    print(f"\n🚀 Starting to produce messages...")
+    print(f"⏱️  Target rate: 10 messages/second")
+    print(f"Press Ctrl+C to stop\n")
+    
+    while True:
+        # Generate transaction
+        transaction = generate_transaction()
+        
+        # Use transaction_id as partition key (ensures ordering per transaction)
+        key = transaction['transaction_id']
+        
+        # Send to Kafka
+        future = producer.send(
+            TOPIC,
+            key=key,
+            value=transaction
+        )
+        
+        # Callback on success/failure
+        def on_success(metadata):
+            global message_count
+            message_count += 1
+            
+            if message_count % 100 == 0:
+                elapsed = time.time() - start_time
+                rate = message_count / elapsed
+                print(f"✅ Sent {message_count:,} messages | Rate: {rate:.2f} msg/sec | "
+                      f"Partition: {metadata.partition} | Offset: {metadata.offset}")
+        
+        def on_error(e):
+            print(f"❌ Error sending message: {e}")
+        
+        future.add_callback(on_success)
+        future.add_errback(on_error)
+        
+        # Control rate (10 messages/second)
+        time.sleep(0.1)
+        
+except KeyboardInterrupt:
+    print(f"\n\n⏹️  Stopping producer...")
+    
+finally:
+    # Flush and close
+    producer.flush()
+    producer.close()
+    
+    elapsed = time.time() - start_time
+    print(f"\n📊 Final Statistics:")
+    print(f"   Total messages: {message_count:,}")
+    print(f"   Duration: {elapsed:.2f} seconds")
+    print(f"   Average rate: {message_count/elapsed:.2f} msg/sec")
+    print(f"\n✅ Producer stopped gracefully")
+```
+
+---
+
+### **Run Producer:**
+
+```bash
+# Install dependencies
+pip install kafka-python
+
+# Run producer
+python kafka_producer_transactions.py
+
+# Output:
+================================================================================
+🏪 POS TRANSACTION PRODUCER - STARTING
+================================================================================
+✅ Connected to Kafka cluster
+📤 Publishing to topic: transactions-stream
+
+🚀 Starting to produce messages...
+⏱️  Target rate: 10 messages/second
+Press Ctrl+C to stop
+
+✅ Sent 100 messages | Rate: 10.03 msg/sec | Partition: 5 | Offset: 12345
+✅ Sent 200 messages | Rate: 10.01 msg/sec | Partition: 8 | Offset: 23456
+✅ Sent 300 messages | Rate: 10.00 msg/sec | Partition: 2 | Offset: 34567
+...
+```
+
+---
+
+### **Producer 2: Promotional Events Producer**
+
+**File: `kafka_producer_promo_events.py`**
+
+```python
+"""
+Kafka Producer: Promotional Events
+───────────────────────────────────
+Purpose: Track promotional campaign events in real-time
+Events: start, end, update, customer_interaction
+"""
+
+from kafka import KafkaProducer
+import json
+import time
+import random
+from datetime import datetime
+import uuid
+
+BOOTSTRAP_SERVERS = [
+    'b-1.dpa-kafka-prod.abc123.kafka.us-east-1.amazonaws.com:9092',
+    'b-2.dpa-kafka-prod.abc123.kafka.us-east-1.amazonaws.com:9092'
+]
+
+TOPIC = 'promo-events'
+
+producer = KafkaProducer(
+    bootstrap_servers=BOOTSTRAP_SERVERS,
+    value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+    compression_type='snappy'
+)
+
+print("🎯 PROMOTIONAL EVENTS PRODUCER - STARTED")
+
+EVENT_TYPES = ['promo_start', 'promo_end', 'customer_view', 'customer_redeem', 'promo_update']
+
+def generate_promo_event():
+    """Generate promotional event"""
+    
+    event_type = random.choice(EVENT_TYPES)
+    
+    event = {
+        'event_id': str(uuid.uuid4()),
+        'timestamp': datetime.utcnow().isoformat() + 'Z',
+        'event_type': event_type,
+        'promotion_id': f"PROMO_{random.randint(100, 999)}",
+        'product_id': f"SKU_{random.randint(1000, 9999)}",
+        'store_id': f"ST_{str(random.randint(1, 5000)).zfill(4)}",
+        'source': 'promo-service',
+        'version': '1.0'
+    }
+    
+    if event_type == 'customer_redeem':
+        event['customer_id'] = f"CUST_{random.randint(10000, 99999)}"
+        event['discount_applied'] = round(random.uniform(5, 50), 2)
+    
+    if event_type == 'promo_update':
+        event['field_updated'] = random.choice(['budget', 'discount', 'end_date'])
+        event['new_value'] = random.randint(1000, 50000)
+    
+    return event
+
+try:
+    count = 0
+    while True:
+        event = generate_promo_event()
+        
+        producer.send(TOPIC, value=event)
+        count += 1
+        
+        if count % 10 == 0:
+            print(f"✅ Sent {count} promo events")
+        
+        # Slower rate (1 event/second)
+        time.sleep(1)
+        
+except KeyboardInterrupt:
+    print("\n⏹️  Stopping...")
+    producer.close()
+```
+
+---
+
+## 🔥 **CPG-603: KAFKA CONSUMERS (MULTIPLE PATTERNS)**
+
+### **Consumer Pattern 1: AWS Lambda Consumer (Simple)**
+
+**File: `lambda_kafka_consumer.py`**
+
+```python
+"""
+AWS Lambda: Kafka Consumer
+──────────────────────────
+Trigger: MSK (Kafka) topic
+Purpose: Process transactions and write to S3/DynamoDB
+"""
+
+import json
+import boto3
+import base64
+from datetime import datetime
+
+s3 = boto3.client('s3')
+dynamodb = boto3.resource('dynamodb')
+cloudwatch = boto3.client('cloudwatch')
+
+# DynamoDB table for real-time lookups
+transactions_table = dynamodb.Table('RealTimeTransactions')
+
+def lambda_handler(event, context):
+    """
+    Lambda handler for Kafka messages
+    Event structure from MSK:
+    {
+        "eventSource": "aws:kafka",
+        "eventSourceArn": "arn:aws:kafka:...",
+        "records": {
+            "transactions-stream-0": [
+                {
+                    "topic": "transactions-stream",
+                    "partition": 0,
+                    "offset": 12345,
+                    "timestamp": 1707654321000,
+                    "key": "transaction-id",
+                    "value": "base64-encoded-json"
+                }
+            ]
+        }
+    }
+    """
+    
+    print(f"🔥 Lambda triggered with {len(event.get('records', {}))} partition batches")
+    
+    total_processed = 0
+    total_fraud = 0
+    batch_start = datetime.utcnow()
+    
+    # Process each partition's messages
+    for topic_partition, messages in event['records'].items():
+        print(f"📂 Processing partition: {topic_partition}")
+        
+        for message in messages:
+            # Decode message
+            value_bytes = base64.b64decode(message['value'])
+            transaction = json.loads(value_bytes.decode('utf-8'))
+            
+            print(f"📨 Transaction: {transaction['transaction_id']}")
+            
+            # ================================================================
+            # PROCESSING LOGIC
+            # ================================================================
+            
+            # 1. Enrich with additional data
+            transaction['processed_at'] = datetime.utcnow().isoformat()
+            transaction['lambda_request_id'] = context.request_id
+            
+            # 2. Calculate additional metrics
+            if 'discount_amount' in transaction and transaction['total_amount'] > 0:
+                transaction['effective_discount_pct'] = round(
+                    (transaction['discount_amount'] / (transaction['total_amount'] + transaction['discount_amount'])) * 100,
+                    2
+                )
+            
+            # 3. Fraud detection
+            if transaction.get('is_fraud', False):
+                total_fraud += 1
+                
+                # Send to fraud alerts topic (would use Kafka producer in real scenario)
+                print(f"🚨 FRAUD DETECTED: {transaction['transaction_id']}")
+                
+                # Send SNS alert
+                sns = boto3.client('sns')
+                sns.publish(
+                    TopicArn='arn:aws:sns:us-east-1:123456789012:fraud-alerts',
+                    Subject='🚨 Fraud Alert',
+                    Message=json.dumps(transaction, indent=2)
+                )
+            
+            # 4. Write to DynamoDB (for real-time lookups)
+            try:
+                transactions_table.put_item(
+                    Item={
+                        'transaction_id': transaction['transaction_id'],
+                        'timestamp': transaction['timestamp'],
+                        'store_id': transaction['store_id'],
+                        'product_id': transaction['product_id'],
+                        'total_amount': str(transaction['total_amount']),
+                        'is_fraud': transaction.get('is_fraud', False),
+                        'ttl': int((datetime.utcnow().timestamp() + 86400 * 7))  # 7 days TTL
+                    }
+                )
+            except Exception as e:
+                print(f"❌ DynamoDB write error: {e}")
+            
+            # 5. Aggregate for batch write to S3
+            total_processed += 1
+    
+    # ================================================================
+    # BATCH WRITE TO S3 (Parquet for analytics)
+    # ================================================================
+    
+    if total_processed > 0:
+        # In real scenario, accumulate and write batches
+        print(f"✅ Processed {total_processed} transactions")
+    
+    # ================================================================
+    # SEND METRICS TO CLOUDWATCH
+    # ================================================================
+    
+    processing_duration = (datetime.utcnow() - batch_start).total_seconds()
+    
+    cloudwatch.put_metric_data(
+        Namespace='DPA/Streaming',
+        MetricData=[
+            {
+                'MetricName': 'TransactionsProcessed',
+                'Value': total_processed,
+                'Unit': 'Count',
+                'Timestamp': datetime.utcnow()
+            },
+            {
+                'MetricName': 'FraudDetected',
+                'Value': total_fraud,
+                'Unit': 'Count',
+                'Timestamp': datetime.utcnow()
+            },
+            {
+                'MetricName': 'ProcessingLatency',
+                'Value': processing_duration,
+                'Unit': 'Seconds',
+                'Timestamp': datetime.utcnow()
+            }
+        ]
+    )
+    
+    return {
+        'statusCode': 200,
+        'body': json.dumps({
+            'processed': total_processed,
+            'fraud_detected': total_fraud,
+            'duration_seconds': processing_duration
+        })
+    }
+```
+
+---
+
+### **Deploy Lambda Consumer:**
+
+```bash
+# Create deployment package
+mkdir lambda_package
+cd lambda_package
+pip install boto3 -t .
+cp ../lambda_kafka_consumer.py .
+zip -r lambda_function.zip .
+
+# Upload to S3
+aws s3 cp lambda_function.zip s3://dpa-lambda-deployment/ --profile dpa-prod
+
+# Create Lambda function
+aws lambda create-function \
+    --function-name kafka-transaction-processor \
+    --runtime python3.11 \
+    --role arn:aws:iam::123456789012:role/LambdaKafkaExecutionRole \
+    --handler lambda_kafka_consumer.lambda_handler \
+    --code S3Bucket=dpa-lambda-deployment,S3Key=lambda_function.zip \
+    --timeout 300 \
+    --memory-size 512 \
+    --environment Variables="{DYNAMODB_TABLE=RealTimeTransactions}" \
+    --profile dpa-prod
+
+# Create MSK trigger (Event Source Mapping)
+aws lambda create-event-source-mapping \
+    --function-name kafka-transaction-processor \
+    --event-source-arn arn:aws:kafka:us-east-1:123456789012:cluster/dpa-kafka-prod/abc-123 \
+    --topics transactions-stream \
+    --starting-position LATEST \
+    --batch-size 100 \
+    --maximum-batching-window-in-seconds 10 \
+    --profile dpa-prod
+
+# Output:
+{
+    "UUID": "abc-123-def-456",
+    "BatchSize": 100,
+    "MaximumBatchingWindowInSeconds": 10,
+    "EventSourceArn": "arn:aws:kafka:...",
+    "FunctionArn": "arn:aws:lambda:...",
+    "State": "Creating",
+    "Topics": ["transactions-stream"]
+}
+```
+
+✅ **Lambda consumer deployed! Auto-processes Kafka messages.**
+
+---
+
+Due to response length limits, I need to continue. Should I proceed with:
+
+1. **Flink Consumer (Advanced stream processing)**
+2. **Stream to Snowflake (Real-time data warehouse)**
+3. **Real-time ML Inference on streams**
+4. **Real-time Dashboards**
+5. **Complete monitoring setup**
+
+Which part would you like me to detail next? 🚀
