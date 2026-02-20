@@ -1,0 +1,727 @@
+# 🗺️ COMPLETE MINDMAP - AWS + SNOWFLAKE DATA ENGINEER + MLOps
+
+Let me create a **COMPREHENSIVE VISUAL MINDMAP** of everything we've covered so you can remember it all!
+
+---
+
+## 🎯 **MASTER MINDMAP - TEXT VERSION**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│              🏢 CPG ANALYTICS PLATFORM - COMPLETE KNOWLEDGE MAP             │
+│                    (Decision Point Analytics - Unilever)                    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                ┌─────────────────────┼─────────────────────┐
+                │                     │                     │
+                ▼                     ▼                     ▼
+    ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
+    │  PROJECT MGMT    │  │  DATA PIPELINE   │  │   ML & MLOps     │
+    │   (Agile/JIRA)   │  │  (Batch+Stream)  │  │   (SageMaker)    │
+    └──────────────────┘  └──────────────────┘  └──────────────────┘
+            │                     │                     │
+            │                     │                     │
+┌───────────┴──────┐   ┌──────────┴──────────┐   ┌────┴─────────┐
+│                  │   │                     │   │              │
+▼                  ▼   ▼                     ▼   ▼              ▼
+```
+
+---
+
+## 📊 **DETAILED HIERARCHICAL MINDMAP**
+
+```
+CPG ANALYTICS PLATFORM (ROOT)
+│
+├─ 1️⃣  PROJECT MANAGEMENT & AGILE
+│   │
+│   ├─ 🎯 Agile Framework
+│   │   ├─ Sprint Planning (2-week sprints)
+│   │   ├─ Daily Standups (9 AM, 15 mins)
+│   │   ├─ Sprint Review (Friday 2 PM)
+│   │   ├─ Sprint Retrospective (Friday 3:30 PM)
+│   │   └─ Backlog Refinement
+│   │
+│   ├─ 📋 JIRA Workflow
+│   │   ├─ Epic → Story → Subtask
+│   │   ├─ Story Points (Fibonacci: 1,2,3,5,8,13,21)
+│   │   ├─ Board Columns: Backlog → To Do → In Progress → Review → Done
+│   │   ├─ Acceptance Criteria
+│   │   └─ Sprint Velocity Tracking
+│   │
+│   ├─ 👥 Team Structure
+│   │   ├─ Sarah (PM) - 12 years exp
+│   │   ├─ Raj (Senior Data Engineer)
+│   │   ├─ You (Data Engineer)
+│   │   ├─ Maria (ML Engineer)
+│   │   ├─ Chen (Junior Engineer)
+│   │   └─ David (DevOps)
+│   │
+│   └─ 📝 Daily Activities
+│       ├─ Morning: Standup, Review alerts
+│       ├─ Midday: Development, Code reviews
+│       ├─ Afternoon: Testing, Documentation
+│       └─ EOD: JIRA updates, commits
+│
+├─ 2️⃣  DATA ARCHITECTURE (MEDALLION)
+│   │
+│   ├─ 🥉 BRONZE LAYER (Raw Data)
+│   │   ├─ Source: S3 Landing Zone (CSV files)
+│   │   ├─ Tool: AWS Glue ETL Jobs
+│   │   ├─ Format: Parquet (compressed)
+│   │   ├─ Schema: Auto-discovered by Glue Crawler
+│   │   ├─ Validation: Nulls, duplicates, data types
+│   │   ├─ Metadata: ingestion_timestamp, source_file, job_run_id
+│   │   ├─ Partitioning: By ingestion_date
+│   │   └─ Location: s3://dpa-bronze/
+│   │
+│   ├─ 🥈 SILVER LAYER (Cleaned & Enriched)
+│   │   ├─ Source: Bronze Parquet files
+│   │   ├─ Tool: AWS Glue PySpark
+│   │   ├─ Transformations:
+│   │   │   ├─ Data Cleaning (remove nulls, dedupe)
+│   │   │   ├─ Business Logic (calculate metrics)
+│   │   │   ├─ Join with Master Data (products, stores)
+│   │   │   ├─ Derived Columns (margin, ROI indicators)
+│   │   │   ├─ Temporal Features (year, month, season)
+│   │   │   └─ Risk Flags (unprofitable, high-risk)
+│   │   ├─ Format: Parquet
+│   │   ├─ Partitioning: By year, month
+│   │   ├─ Optimization: Z-ORDER clustering
+│   │   └─ Location: s3://dpa-silver/
+│   │
+│   └─ 🥇 GOLD LAYER (Business Ready)
+│       ├─ Source: Silver Layer
+│       ├─ Tool: dbt (Data Build Tool) in Snowflake
+│       ├─ Loading: Snowpipe (auto-ingest from S3)
+│       ├─ Tables:
+│       │   ├─ monthly_promo_summary
+│       │   ├─ product_promo_performance
+│       │   ├─ brand_promo_effectiveness
+│       │   ├─ regional_promo_analysis
+│       │   └─ promo_roi_dashboard
+│       ├─ Format: Snowflake Tables
+│       ├─ Clustering: By date, category, brand
+│       ├─ Access: BI tools, Analysts, ML models
+│       └─ Location: Snowflake ANALYTICS_PROD.GOLD
+│
+├─ 3️⃣  AWS SERVICES & TOOLS
+│   │
+│   ├─ 💾 Storage
+│   │   ├─ Amazon S3
+│   │   │   ├─ Buckets: landing, bronze, silver, gold, logs
+│   │   │   ├─ Lifecycle: Archive to Glacier after 90 days
+│   │   │   ├─ Versioning: Enabled on critical buckets
+│   │   │   └─ Encryption: SSE-S3, SSE-KMS
+│   │   └─ Amazon RDS PostgreSQL (Airflow metadata)
+│   │
+│   ├─ 🔄 Data Processing
+│   │   ├─ AWS Glue
+│   │   │   ├─ Glue Jobs (PySpark ETL)
+│   │   │   ├─ Glue Crawlers (schema discovery)
+│   │   │   ├─ Glue Data Catalog (metadata)
+│   │   │   ├─ Glue DataBrew (visual data prep)
+│   │   │   └─ Job Bookmarks (incremental processing)
+│   │   ├─ AWS Lambda
+│   │   │   ├─ File validators
+│   │   │   ├─ Stream processors
+│   │   │   └─ Event-driven triggers
+│   │   └─ Amazon Athena (SQL on S3)
+│   │
+│   ├─ 🌊 Streaming
+│   │   ├─ Amazon MSK (Managed Kafka)
+│   │   │   ├─ Topics: transactions, promo-events, inventory
+│   │   │   ├─ Producers: Python, Java
+│   │   │   ├─ Consumers: Lambda, Flink
+│   │   │   └─ Retention: 7 days
+│   │   ├─ Amazon Kinesis Data Streams
+│   │   ├─ Kinesis Data Firehose
+│   │   └─ Kinesis Data Analytics (SQL on streams)
+│   │
+│   ├─ 🤖 Machine Learning
+│   │   ├─ Amazon SageMaker
+│   │   │   ├─ Training Jobs (XGBoost)
+│   │   │   ├─ Hyperparameter Tuning
+│   │   │   ├─ Model Registry
+│   │   │   ├─ Batch Transform (batch inference)
+│   │   │   ├─ Real-time Endpoints (API)
+│   │   │   ├─ Model Monitor (drift detection)
+│   │   │   ├─ Feature Store
+│   │   │   └─ Pipelines (MLOps automation)
+│   │   └─ API Gateway (ML API endpoint)
+│   │
+│   ├─ 🎼 Orchestration
+│   │   ├─ Amazon MWAA (Managed Airflow)
+│   │   │   ├─ DAGs: Master pipeline, ML training
+│   │   │   ├─ Scheduling: Cron expressions
+│   │   │   ├─ Connections: AWS, Snowflake, Slack
+│   │   │   └─ Task Groups
+│   │   └─ AWS Step Functions (serverless workflows)
+│   │
+│   ├─ 📊 Monitoring & Logging
+│   │   ├─ Amazon CloudWatch
+│   │   │   ├─ Logs (all services)
+│   │   │   ├─ Metrics (custom + default)
+│   │   │   ├─ Alarms (thresholds)
+│   │   │   └─ Dashboards
+│   │   ├─ AWS CloudTrail (audit logs)
+│   │   └─ AWS X-Ray (distributed tracing)
+│   │
+│   ├─ 🔐 Security & Governance
+│   │   ├─ AWS IAM (roles, policies)
+│   │   ├─ AWS KMS (encryption keys)
+│   │   ├─ AWS Secrets Manager (credentials)
+│   │   ├─ AWS Lake Formation (data access control)
+│   │   └─ VPC (network isolation)
+│   │
+│   └─ 📢 Notifications
+│       ├─ Amazon SNS (email, SMS)
+│       └─ Slack Webhooks
+│
+├─ 4️⃣  SNOWFLAKE DATA WAREHOUSE
+│   │
+│   ├─ 🏗️ Infrastructure
+│   │   ├─ Database: ANALYTICS_PROD
+│   │   ├─ Schemas: STAGING, GOLD, ML_FEATURES, ML_PREDICTIONS
+│   │   ├─ Warehouses: COMPUTE_WH_ETL, COMPUTE_WH_BI
+│   │   ├─ Storage Integration: S3 (IAM role)
+│   │   └─ External Stages: S3_SILVER_STAGE
+│   │
+│   ├─ 📥 Data Loading
+│   │   ├─ Snowpipe (auto-ingest from S3)
+│   │   │   ├─ Triggered by S3 events (SQS)
+│   │   │   ├─ Continuous loading
+│   │   │   └─ Micro-batches
+│   │   ├─ COPY INTO (bulk load)
+│   │   └─ Snowflake Connector (Python, Spark)
+│   │
+│   ├─ 🔧 dbt (Data Build Tool)
+│   │   ├─ Models: Staging, Intermediate, Marts
+│   │   ├─ Tests: Schema tests, data tests
+│   │   ├─ Documentation: Auto-generated
+│   │   ├─ Materialization: Table, View, Incremental
+│   │   └─ Version Control: Git
+│   │
+│   ├─ ⚡ Performance
+│   │   ├─ Clustering Keys (improve query speed)
+│   │   ├─ Materialized Views
+│   │   ├─ Result Cache
+│   │   └─ Auto-suspend/resume
+│   │
+│   └─ 🔒 Security
+│       ├─ Role-Based Access Control (RBAC)
+│       ├─ Row-Level Security
+│       ├─ Column-Level Security
+│       └─ Data Masking
+│
+├─ 5️⃣  MACHINE LEARNING PIPELINE
+│   │
+│   ├─ 🎯 Use Case: Promotional Sales Lift Prediction
+│   │   ├─ Target: sales_lift_pct (regression)
+│   │   ├─ Features: 20+ features (promo, product, temporal)
+│   │   └─ Business Value: $5M+ annual savings
+│   │
+│   ├─ 📊 Feature Engineering
+│   │   ├─ Tool: Snowflake Snowpark (Python in Snowflake)
+│   │   ├─ Process:
+│   │   │   ├─ Join sales with promotions
+│   │   │   ├─ Calculate baseline sales (7-day avg)
+│   │   │   ├─ Calculate lift % (target variable)
+│   │   │   ├─ Create features (temporal, product, promo)
+│   │   │   └─ Train/test split (80/20, time-based)
+│   │   └─ Output: CSV files in S3
+│   │
+│   ├─ 🏋️ Model Training
+│   │   ├─ Algorithm: XGBoost (AWS built-in)
+│   │   ├─ Instance: ml.m5.2xlarge (8 vCPU, 32 GB)
+│   │   ├─ Hyperparameters: max_depth, eta, num_rounds
+│   │   ├─ Validation: Cross-validation
+│   │   ├─ Metrics: RMSE, MAE, R²
+│   │   └─ Duration: ~10 minutes
+│   │
+│   ├─ 📦 Model Registry
+│   │   ├─ Versions: v1, v2, v3...
+│   │   ├─ Status: PendingApproval, Approved, Rejected
+│   │   ├─ Metadata: Metrics, hyperparameters, training date
+│   │   └─ Lineage: Training data, code version
+│   │
+│   ├─ 🔮 Inference
+│   │   ├─ Batch Transform
+│   │   │   ├─ Input: Upcoming promotions from Snowflake
+│   │   │   ├─ Process: Score 10,000+ promotions
+│   │   │   ├─ Output: Predictions to Snowflake
+│   │   │   └─ Schedule: Daily via Airflow
+│   │   └─ Real-time Endpoint (API)
+│   │       ├─ Latency: <100ms
+│   │       ├─ Auto-scaling: 1-10 instances
+│   │       ├─ API Gateway integration
+│   │       └─ Use case: Marketing team self-service
+│   │
+│   └─ 📈 Model Monitoring
+│       ├─ SageMaker Model Monitor
+│       ├─ Data Quality Monitoring
+│       ├─ Model Quality Monitoring
+│       ├─ Drift Detection (features, predictions)
+│       └─ Alerts: CloudWatch + SNS
+│
+├─ 6️⃣  REAL-TIME STREAMING
+│   │
+│   ├─ 🎯 Use Case: Real-time promotional tracking
+│   │   ├─ Latency: <5 seconds end-to-end
+│   │   ├─ Throughput: 10,000 events/second
+│   │   └─ Sources: POS, IoT, Mobile apps
+│   │
+│   ├─ 📡 Amazon MSK (Kafka)
+│   │   ├─ Cluster: 3 brokers (Multi-AZ)
+│   │   ├─ Instance: kafka.m5.large
+│   │   ├─ Topics:
+│   │   │   ├─ transactions-stream (12 partitions)
+│   │   │   ├─ promo-events (6 partitions)
+│   │   │   ├─ inventory-updates (6 partitions)
+│   │   │   └─ fraud-alerts (3 partitions)
+│   │   ├─ Retention: 7 days
+│   │   └─ Replication: 3x
+│   │
+│   ├─ 📤 Producers
+│   │   ├─ Python Producer (POS transactions)
+│   │   │   ├─ Rate: 10 msg/sec per store
+│   │   │   ├─ Serialization: JSON
+│   │   │   └─ Compression: Snappy
+│   │   ├─ Java Producer (Mobile apps)
+│   │   └─ Lambda Producer (IoT → Kafka)
+│   │
+│   ├─ 📥 Consumers
+│   │   ├─ AWS Lambda (simple processing)
+│   │   │   ├─ Trigger: MSK event source
+│   │   │   ├─ Batch: 100 messages
+│   │   │   ├─ Processing: Enrich, filter, validate
+│   │   │   └─ Output: DynamoDB, S3
+│   │   ├─ Kinesis Data Analytics (SQL on streams)
+│   │   └─ Apache Flink (complex processing)
+│   │       ├─ Windowing (tumbling, sliding)
+│   │       ├─ Joins (stream-stream, stream-table)
+│   │       └─ CEP (complex event processing)
+│   │
+│   └─ 💾 Sinks
+│       ├─ S3 (data lake, Parquet, hourly partitions)
+│       ├─ Snowflake (real-time tables via Snowpipe Streaming)
+│       ├─ DynamoDB (operational queries, <10ms)
+│       └─ OpenSearch (log analytics, search)
+│
+├─ 7️⃣  ORCHESTRATION (Apache Airflow)
+│   │
+│   ├─ 🎼 Master DAG: cpg_analytics_master_pipeline
+│   │   ├─ Schedule: Daily @ 2 AM EST (cron: 0 2 * * *)
+│   │   ├─ Tasks:
+│   │   │   ├─ 1. Check landing zone files (S3 sensor)
+│   │   │   ├─ 2. Bronze Layer (Glue job)
+│   │   │   ├─ 3. Validate Bronze (Python operator)
+│   │   │   ├─ 4. Silver Layer (Glue job)
+│   │   │   ├─ 5. Validate Silver (Python operator)
+│   │   │   ├─ 6. Gold Layer (dbt run)
+│   │   │   ├─ 7. Validate Gold (Snowflake query)
+│   │   │   ├─ 8. ML Inference (SageMaker batch)
+│   │   │   └─ 9. Notifications (Slack, SNS)
+│   │   ├─ Retries: 2 attempts, 5 min delay
+│   │   ├─ Timeout: 4 hours
+│   │   └─ Dependencies: Task groups, branch operators
+│   │
+│   ├─ 📅 Other DAGs
+│   │   ├─ weekly_ml_retraining (Mondays @ 3 AM)
+│   │   ├─ hourly_data_quality_monitoring
+│   │   └─ daily_reports_generation
+│   │
+│   ├─ 🔗 Connections
+│   │   ├─ aws_default (AWS IAM role)
+│   │   ├─ snowflake_default (username/password)
+│   │   └─ slack_default (webhook)
+│   │
+│   └─ 📊 Monitoring
+│       ├─ Airflow Web UI (DAG runs, task logs)
+│       ├─ CloudWatch Logs
+│       └─ Slack notifications
+│
+├─ 8️⃣  CI/CD PIPELINE (GitHub Actions)
+│   │
+│   ├─ 🔄 CI Pipeline (Pull Request)
+│   │   ├─ Triggered: On PR to main
+│   │   ├─ Jobs:
+│   │   │   ├─ 1. Code Quality
+│   │   │   │   ├─ Linting: pylint, flake8, black
+│   │   │   │   ├─ Security: Bandit, Safety
+│   │   │   │   └─ SQL: sqlfluff
+│   │   │   ├─ 2. Unit Tests
+│   │   │   │   ├─ pytest (Python)
+│   │   │   │   ├─ Coverage: >80% required
+│   │   │   │   └─ Upload to CodeCov
+│   │   │   ├─ 3. Integration Tests
+│   │   │   │   ├─ Docker containers
+│   │   │   │   └─ Mock Kafka, PostgreSQL
+│   │   │   ├─ 4. Data Quality Tests
+│   │   │   │   └─ Great Expectations
+│   │   │   ├─ 5. dbt Tests
+│   │   │   │   ├─ dbt compile
+│   │   │   │   └─ dbt test
+│   │   │   └─ 6. Build Artifacts
+│   │   │       ├─ Package Glue scripts
+│   │   │       ├─ Package Lambda functions
+│   │   │       └─ Upload to S3
+│   │   └─ Result: ✅ Pass → Merge allowed | ❌ Fail → Blocked
+│   │
+│   ├─ 🚀 CD Pipeline (Merge to main)
+│   │   ├─ Deploy to Dev (automatic)
+│   │   │   ├─ Glue jobs
+│   │   │   ├─ Lambda functions
+│   │   │   ├─ dbt models
+│   │   │   ├─ Airflow DAGs
+│   │   │   └─ Smoke tests
+│   │   ├─ Deploy to Staging (manual approval)
+│   │   │   ├─ Terraform apply
+│   │   │   ├─ Full test suite
+│   │   │   └─ Performance tests
+│   │   └─ Deploy to Production (manual approval)
+│   │       ├─ Blue-Green deployment
+│   │       ├─ Deploy to green
+│   │       ├─ Smoke tests
+│   │       ├─ Switch traffic
+│   │       ├─ Monitor 15 mins
+│   │       └─ Rollback option
+│   │
+│   ├─ 🔐 Secrets Management
+│   │   ├─ GitHub Secrets
+│   │   │   ├─ AWS_ACCESS_KEY_ID
+│   │   │   ├─ AWS_SECRET_ACCESS_KEY
+│   │   │   ├─ SNOWFLAKE_PASSWORD
+│   │   │   └─ SLACK_BOT_TOKEN
+│   │   └─ AWS Secrets Manager (runtime)
+│   │
+│   └─ 📢 Notifications
+│       ├─ Slack: #ci-failures, #deployments
+│       ├─ Email: data-engineering@dpa.com
+│       └─ JIRA: Auto-update tickets
+│
+├─ 9️⃣  DATA QUALITY FRAMEWORK
+│   │
+│   ├─ 🎯 Validation Layers
+│   │   ├─ Bronze Layer
+│   │   │   ├─ NULL checks (critical columns)
+│   │   │   ├─ Data type validation
+│   │   │   ├─ Range checks (discount 0-100%)
+│   │   │   ├─ Duplicate detection
+│   │   │   └─ Rejection rate < 5%
+│   │   ├─ Silver Layer
+│   │   │   ├─ Business rule validation
+│   │   │   ├─ Referential integrity
+│   │   │   ├─ Calculation verification
+│   │   │   └─ Unprofitable % < 15%
+│   │   └─ Gold Layer
+│   │       ├─ Aggregation validation
+│   │       ├─ Record count checks
+│   │       └─ Data freshness (<6 hours)
+│   │
+│   ├─ 🛠️ Tools
+│   │   ├─ Great Expectations
+│   │   │   ├─ Expectations (data rules)
+│   │   │   ├─ Checkpoints (validation runs)
+│   │   │   ├─ Data Docs (auto-generated reports)
+│   │   │   └─ Integration: Airflow, CI/CD
+│   │   ├─ Custom Python validators
+│   │   └─ dbt tests (schema, data)
+│   │
+│   ├─ 📊 Metrics
+│   │   ├─ Completeness (no NULLs)
+│   │   ├─ Accuracy (calculations correct)
+│   │   ├─ Consistency (business rules)
+│   │   ├─ Validity (value ranges)
+│   │   ├─ Uniqueness (no duplicates)
+│   │   ├─ Timeliness (data freshness)
+│   │   └─ Conformity (format standards)
+│   │
+│   └─ 🚨 Alerting
+│       ├─ CloudWatch Alarms
+│       ├─ SNS notifications
+│       ├─ Slack alerts
+│       └─ PagerDuty (critical issues)
+│
+└─ 🔟 MONITORING & OBSERVABILITY
+    │
+    ├─ 📊 CloudWatch Dashboards
+    │   ├─ Pipeline Health
+    │   │   ├─ Job success rates
+    │   │   ├─ Execution times
+    │   │   └─ Error rates
+    │   ├─ Data Quality
+    │   │   ├─ Rejection rates
+    │   │   ├─ Record counts
+    │   │   └─ Data freshness
+    │   ├─ ML Performance
+    │   │   ├─ Model accuracy
+    │   │   ├─ Prediction latency
+    │   │   └─ Drift metrics
+    │   └─ Streaming Metrics
+    │       ├─ Kafka lag
+    │       ├─ Throughput
+    │       └─ Consumer latency
+    │
+    ├─ 📝 Logging
+    │   ├─ CloudWatch Logs
+    │   │   ├─ Glue job logs
+    │   │   ├─ Lambda logs
+    │   │   ├─ Airflow logs
+    │   │   └─ Application logs
+    │   ├─ Log Aggregation
+    │   │   ├─ Structured logging (JSON)
+    │   │   ├─ Log groups per service
+    │   │   └─ Retention: 30-90 days
+    │   └─ Log Analysis
+    │       ├─ CloudWatch Insights (queries)
+    │       └─ OpenSearch (full-text search)
+    │
+    ├─ 🔍 Tracing
+    │   ├─ AWS X-Ray
+    │   │   ├─ Distributed tracing
+    │   │   ├─ Service map
+    │   │   ├─ Latency analysis
+    │   │   └─ Error tracking
+    │   └─ SageMaker Debugger
+    │
+    ├─ 🚨 Alerting
+    │   ├─ CloudWatch Alarms
+    │   │   ├─ CPU/Memory thresholds
+    │   │   ├─ Error rate spikes
+    │   │   ├─ Job failures
+    │   │   └─ Data quality breaches
+    │   ├─ SNS Topics
+    │   │   ├─ Critical: PagerDuty
+    │   │   ├─ Warning: Email
+    │   │   └─ Info: Slack
+    │   └─ Alert Routing
+    │       ├─ Severity-based
+    │       ├─ Time-based (business hours)
+    │       └─ On-call schedule
+    │
+    └─ 📈 Performance Optimization
+        ├─ Query Optimization
+        │   ├─ Snowflake: clustering, caching
+        │   ├─ S3: partitioning strategy
+        │   └─ Glue: job bookmarks, DPU tuning
+        ├─ Cost Optimization
+        │   ├─ S3 lifecycle policies
+        │   ├─ Snowflake auto-suspend
+        │   ├─ Reserved capacity
+        │   └─ Spot instances
+        └─ Scaling Strategies
+            ├─ Horizontal: Add workers/nodes
+            ├─ Vertical: Larger instance types
+            └─ Auto-scaling: Dynamic adjustment
+```
+
+---
+
+## 🎨 **VISUAL WORKFLOW MINDMAP**
+
+```
+                    📅 DAILY WORKFLOW
+                          │
+        ┌─────────────────┼─────────────────┐
+        │                 │                 │
+        ▼                 ▼                 ▼
+   🌅 MORNING        🏗️ DEVELOPMENT    🌙 EVENING
+        │                 │                 │
+   ┌────┴────┐       ┌────┴────┐      ┌────┴────┐
+   │         │       │         │      │         │
+   ▼         ▼       ▼         ▼      ▼         ▼
+Standup   Check   Code    Test   Update   Commit
+  9AM    Alerts   Write   Debug   JIRA    Code
+         Review          Deploy
+         Pipeline
+         Status
+
+
+                   🔄 DATA FLOW
+                        │
+        ┌───────────────┼───────────────┐
+        │               │               │
+        ▼               ▼               ▼
+   📥 INGEST       🔄 PROCESS      📊 CONSUME
+        │               │               │
+   ┌────┴────┐     ┌────┴────┐     ┌────┴────┐
+   │         │     │         │     │         │
+   ▼         ▼     ▼         ▼     ▼         ▼
+  CSV      S3    Bronze   Silver  Gold    BI Tools
+ Files   Landing  Glue    Glue    dbt     QuickSight
+              ↓      ↓       ↓      ↓        ↓
+            Kafka  Lambda  Flink  Snowflake API
+```
+
+---
+
+## 🧠 **QUICK REFERENCE CHEAT SHEET**
+
+```
+╔═══════════════════════════════════════════════════════════════╗
+║  TECH STACK QUICK REFERENCE                                   ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  STORAGE:        S3, Snowflake, DynamoDB, RDS                ║
+║  PROCESSING:     Glue (PySpark), Lambda, dbt                 ║
+║  STREAMING:      MSK (Kafka), Kinesis, Flink                 ║
+║  ML:             SageMaker (Training, Inference, Monitor)    ║
+║  ORCHESTRATION:  Airflow (MWAA), Step Functions              ║
+║  CI/CD:          GitHub Actions, Terraform                   ║
+║  MONITORING:     CloudWatch, X-Ray, SNS, Slack               ║
+║  BI:             QuickSight, Tableau, Athena                 ║
+║                                                               ║
+╠═══════════════════════════════════════════════════════════════╣
+║  KEY COMMANDS                                                 ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  AWS CLI:        aws glue start-job-run --job-name <name>    ║
+║  Kafka:          kafka-topics.sh --list --bootstrap-server   ║
+║  dbt:            dbt run --select state:modified+            ║
+║  Snowflake:      COPY INTO table FROM @stage                 ║
+║  Git:            git checkout -b feature/CPG-XXX             ║
+║  pytest:         pytest tests/ -v --cov                      ║
+║  Airflow:        airflow dags trigger <dag_id>               ║
+║                                                               ║
+╠═══════════════════════════════════════════════════════════════╣
+║  DAILY CHECKLIST                                              ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  ☐ Check Slack alerts (#data-pipeline-alerts)                ║
+║  ☐ Review Airflow DAG runs (last 24 hours)                   ║
+║  ☐ Check CloudWatch dashboards                               ║
+║  ☐ Attend standup (9 AM)                                     ║
+║  ☐ Review assigned JIRA tickets                              ║
+║  ☐ Pull latest from main branch                              ║
+║  ☐ Run tests before commit                                   ║
+║  ☐ Update JIRA with progress                                 ║
+║  ☐ Create PR if feature complete                             ║
+║  ☐ EOD: Commit code, update docs                             ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
+---
+
+## 📝 **INTERVIEW PREPARATION MINDMAP**
+
+```
+"Tell me about a project you worked on"
+           │
+           ▼
+    "CPG Analytics Platform for Unilever"
+           │
+    ┌──────┴──────┐
+    │             │
+    ▼             ▼
+PROBLEM      SOLUTION
+    │             │
+    ▼             ▼
+"Optimize    "Built end-to-end data platform"
+$125M promo       │
+budget"      ┌────┴────┬────────┬────────┐
+             │         │        │        │
+             ▼         ▼        ▼        ▼
+          Batch    Streaming   ML    CI/CD
+         Pipeline  Pipeline   Model  Auto-
+             │         │        │    deploy
+             ▼         ▼        ▼        ▼
+          Glue +    Kafka +  SageMaker GitHub
+          dbt +     Lambda   XGBoost   Actions
+          Snowflake                    
+             │         │        │        │
+             └─────────┴────────┴────────┘
+                       │
+                       ▼
+                   RESULTS
+                       │
+            ┌──────────┼──────────┐
+            ▼          ▼          ▼
+         15-20%    Real-time   $5M+
+         better    insights   savings
+         ROI       <5 sec     annually
+```
+
+---
+
+## 🎯 **PROJECT IMPLEMENTATION ORDER**
+
+```
+WEEK 1-2:  📦 Batch Pipeline (Bronze → Silver → Gold)
+            ├─ AWS Glue jobs
+            ├─ Snowflake setup
+            └─ dbt models
+
+WEEK 3:    🎼 Orchestration (Airflow)
+            ├─ MWAA setup
+            ├─ Master DAG
+            └─ Scheduling
+
+WEEK 4-5:  🤖 ML Pipeline (SageMaker)
+            ├─ Feature engineering
+            ├─ Model training
+            └─ Batch inference
+
+WEEK 6-7:  🌊 Streaming (Kafka)
+            ├─ MSK cluster
+            ├─ Producers/Consumers
+            └─ Real-time processing
+
+WEEK 8:    🔄 CI/CD (GitHub Actions)
+            ├─ Test automation
+            ├─ Deployment pipelines
+            └─ Infrastructure as Code
+
+WEEK 9:    📊 Monitoring & Optimization
+            ├─ CloudWatch dashboards
+            ├─ Alerts
+            └─ Performance tuning
+```
+
+---
+
+## 💡 **SAVE THIS - ONE-PAGE SUMMARY**
+
+```
+╔═══════════════════════════════════════════════════════════════╗
+║        CPG ANALYTICS PLATFORM - COMPLETE KNOWLEDGE            ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  🎯 PROJECT: Promotional analytics for Unilever              ║
+║  👥 TEAM: Agile (2-week sprints, JIRA, daily standups)       ║
+║                                                               ║
+║  📊 DATA PIPELINE:                                            ║
+║     Bronze (S3 + Glue) → Silver (Glue PySpark) →             ║
+║     Gold (Snowflake + dbt)                                    ║
+║                                                               ║
+║  🌊 STREAMING: MSK (Kafka) → Lambda/Flink → Snowflake        ║
+║                                                               ║
+║  🤖 ML: SageMaker (XGBoost) → Predict promo lift %           ║
+║     Features: Snowpark | Training: SageMaker |               ║
+║     Inference: Batch Transform + Real-time API               ║
+║                                                               ║
+║  🎼 ORCHESTRATION: Airflow (MWAA) - Daily @ 2 AM             ║
+║                                                               ║
+║  🔄 CI/CD: GitHub Actions                                     ║
+║     CI: Lint → Test → Quality → Build                        ║
+║     CD: Dev → Staging → Prod (Blue-Green)                    ║
+║                                                               ║
+║  📈 MONITORING: CloudWatch + SNS + Slack                      ║
+║                                                               ║
+║  ✅ DATA QUALITY: Great Expectations at each layer           ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
+---
+
+**This mindmap covers EVERYTHING we've learned! Save it, print it, refer to it during projects!** 🚀
+
+Would you like me to:
+1. Create a **PDF version** of this mindmap?
+2. Make an **interactive Miro/Mermaid diagram**?
+3. Create **flashcards** for interview prep?
+4. Build a **project timeline Gantt chart**?
