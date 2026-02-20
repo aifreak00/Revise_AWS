@@ -1,0 +1,1587 @@
+# 🥇 COMPLETE GOLD LAYER - SNOWFLAKE + dbt
+
+Let me show you the **COMPLETE GOLD LAYER** implementation using Snowflake as the data warehouse and dbt for transformations!
+
+---
+
+## 📋 **JIRA STORY: CPG-403**
+
+```
+╔═══════════════════════════════════════════════════════════════╗
+║  CPG-403: Silver → Gold (Snowflake + dbt)                     ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  As a: Data Engineer                                          ║
+║  I want to: Load Silver data to Snowflake and create Gold    ║
+║             layer aggregations using dbt                      ║
+║  So that: Business users can query analytics-ready data      ║
+║                                                               ║
+║  Acceptance Criteria:                                         ║
+║  ✓ Set up Snowflake database & schemas                       ║
+║  ✓ Configure Snowpipe for auto-loading from S3              ║
+║  ✓ Create external stage for S3 Silver layer                ║
+║  ✓ Load Silver data to Snowflake staging tables             ║
+║  ✓ Set up dbt project with source/models                     ║
+║  ✓ Create Gold aggregation models (dbt)                     ║
+║  ✓ Implement data quality tests (dbt tests)                 ║
+║  ✓ Schedule dbt runs                                         ║
+║  ✓ Create materialized views for performance                ║
+║  ✓ Grant access to BI tools (Tableau/QuickSight)            ║
+║                                                               ║
+║  Story Points: 13                                             ║
+║  Sprint: 16-17                                                ║
+║  Assignee: You + Maria                                        ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
+---
+
+## 🎯 **ARCHITECTURE: SILVER → SNOWFLAKE → GOLD**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                  S3 SILVER LAYER                                │
+│  s3://dpa-silver/promotions_enriched/*.parquet                  │
+└────────────┬────────────────────────────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              SNOWPIPE (Auto-Ingest)                             │
+│  Monitors S3 → Auto-loads new files → Snowflake Staging        │
+└────────────┬────────────────────────────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│         SNOWFLAKE - STAGING SCHEMA                              │
+│  Database: ANALYTICS_PROD                                       │
+│  Schema: STAGING                                                │
+│  Table: STG_PROMOTIONS_ENRICHED (Raw from S3)                  │
+└────────────┬────────────────────────────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              DBT TRANSFORMATIONS                                │
+│  Models: SQL-based transformations                              │
+│  ├─ Staging models (light transformations)                     │
+│  ├─ Intermediate models (business logic)                       │
+│  └─ Mart models (Gold layer aggregations)                      │
+└────────────┬────────────────────────────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│         SNOWFLAKE - GOLD SCHEMA                                 │
+│  Schema: GOLD                                                    │
+│  Tables:                                                         │
+│  ├─ MONTHLY_PROMO_SUMMARY                                       │
+│  ├─ PRODUCT_PROMO_PERFORMANCE                                   │
+│  ├─ BRAND_EFFECTIVENESS                                         │
+│  ├─ REGIONAL_PROMO_ANALYSIS                                     │
+│  └─ PROMO_ROI_DASHBOARD                                         │
+└────────────┬────────────────────────────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              CONSUMPTION LAYER                                  │
+│  • Tableau Dashboards                                           │
+│  • Amazon QuickSight                                            │
+│  • SQL Analysts (Snowflake Web UI)                             │
+│  • Python Notebooks (Snowpark)                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📅 **STEP 1: SET UP SNOWFLAKE INFRASTRUCTURE**
+
+### **Login to Snowflake:**
+
+```bash
+# Using SnowSQL CLI
+snowsql -a abc12345 -u yourname@dpa.com
+
+# Or via Web UI:
+# https://abc12345.us-east-1.snowflakecomputing.com
+```
+
+---
+
+### **Create Snowflake Objects:**
+
+```sql
+-- ============================================================================
+-- SNOWFLAKE SETUP - GOLD LAYER INFRASTRUCTURE
+-- ============================================================================
+-- Execute in Snowflake Web UI or SnowSQL
+-- Role: ACCOUNTADMIN or SYSADMIN
+-- ============================================================================
+
+USE ROLE ACCOUNTADMIN;
+
+-- ============================================================================
+-- STEP 1: CREATE WAREHOUSE (Compute)
+-- ============================================================================
+
+-- Create warehouse for ETL workloads
+CREATE WAREHOUSE IF NOT EXISTS COMPUTE_WH_ETL
+    WAREHOUSE_SIZE = 'MEDIUM'
+    AUTO_SUSPEND = 300           -- 5 minutes
+    AUTO_RESUME = TRUE
+    INITIALLY_SUSPENDED = TRUE
+    COMMENT = 'Warehouse for ETL and dbt transformations';
+
+-- Create warehouse for BI queries
+CREATE WAREHOUSE IF NOT EXISTS COMPUTE_WH_BI
+    WAREHOUSE_SIZE = 'SMALL'
+    AUTO_SUSPEND = 60            -- 1 minute
+    AUTO_RESUME = TRUE
+    INITIALLY_SUSPENDED = TRUE
+    COMMENT = 'Warehouse for BI tools and analysts';
+
+-- Grant usage
+GRANT USAGE ON WAREHOUSE COMPUTE_WH_ETL TO ROLE DATA_ENGINEER;
+GRANT USAGE ON WAREHOUSE COMPUTE_WH_BI TO ROLE ANALYST;
+
+-- ============================================================================
+-- STEP 2: CREATE DATABASE & SCHEMAS
+-- ============================================================================
+
+-- Create database
+CREATE DATABASE IF NOT EXISTS ANALYTICS_PROD
+    COMMENT = 'Production analytics database for CPG insights';
+
+USE DATABASE ANALYTICS_PROD;
+
+-- Create schemas for medallion architecture
+CREATE SCHEMA IF NOT EXISTS STAGING
+    COMMENT = 'Staging schema - Raw data from S3 Silver layer';
+
+CREATE SCHEMA IF NOT EXISTS GOLD
+    COMMENT = 'Gold schema - Business-ready aggregations';
+
+CREATE SCHEMA IF NOT EXISTS REPORTING
+    COMMENT = 'Reporting schema - Final views for BI tools';
+
+-- Create schema for dbt artifacts
+CREATE SCHEMA IF NOT EXISTS DBT_ANALYTICS
+    COMMENT = 'dbt run metadata and artifacts';
+
+-- Grant permissions
+GRANT USAGE ON DATABASE ANALYTICS_PROD TO ROLE DATA_ENGINEER;
+GRANT USAGE ON SCHEMA STAGING TO ROLE DATA_ENGINEER;
+GRANT USAGE ON SCHEMA GOLD TO ROLE DATA_ENGINEER;
+GRANT USAGE ON SCHEMA DBT_ANALYTICS TO ROLE DATA_ENGINEER;
+
+GRANT ALL PRIVILEGES ON SCHEMA STAGING TO ROLE DATA_ENGINEER;
+GRANT ALL PRIVILEGES ON SCHEMA GOLD TO ROLE DATA_ENGINEER;
+GRANT ALL PRIVILEGES ON SCHEMA DBT_ANALYTICS TO ROLE DATA_ENGINEER;
+
+-- Read-only access for analysts
+GRANT USAGE ON DATABASE ANALYTICS_PROD TO ROLE ANALYST;
+GRANT USAGE ON SCHEMA GOLD TO ROLE ANALYST;
+GRANT USAGE ON SCHEMA REPORTING TO ROLE ANALYST;
+GRANT SELECT ON ALL TABLES IN SCHEMA GOLD TO ROLE ANALYST;
+GRANT SELECT ON ALL VIEWS IN SCHEMA REPORTING TO ROLE ANALYST;
+
+-- ============================================================================
+-- STEP 3: CREATE AWS INTEGRATION (for S3 access)
+-- ============================================================================
+
+-- Create storage integration for S3
+CREATE STORAGE INTEGRATION IF NOT EXISTS S3_DPA_INTEGRATION
+    TYPE = EXTERNAL_STAGE
+    STORAGE_PROVIDER = S3
+    ENABLED = TRUE
+    STORAGE_AWS_ROLE_ARN = 'arn:aws:iam::123456789012:role/SnowflakeS3AccessRole'
+    STORAGE_ALLOWED_LOCATIONS = (
+        's3://dpa-silver/',
+        's3://dpa-gold/'
+    )
+    COMMENT = 'Integration for DPA S3 buckets';
+
+-- Grant usage on integration
+GRANT USAGE ON INTEGRATION S3_DPA_INTEGRATION TO ROLE DATA_ENGINEER;
+
+-- Describe integration to get IAM user for trust relationship
+DESC INTEGRATION S3_DPA_INTEGRATION;
+
+/*
+IMPORTANT: Copy the STORAGE_AWS_IAM_USER_ARN and STORAGE_AWS_EXTERNAL_ID
+You'll need these to configure the AWS IAM role trust relationship
+*/
+
+-- ============================================================================
+-- STEP 4: CREATE EXTERNAL STAGE (S3 Silver Layer)
+-- ============================================================================
+
+USE SCHEMA STAGING;
+
+CREATE STAGE IF NOT EXISTS S3_SILVER_STAGE
+    STORAGE_INTEGRATION = S3_DPA_INTEGRATION
+    URL = 's3://dpa-silver/promotions_enriched/'
+    FILE_FORMAT = (
+        TYPE = PARQUET
+        COMPRESSION = SNAPPY
+    )
+    COMMENT = 'External stage pointing to S3 Silver layer';
+
+-- Test stage access
+LIST @S3_SILVER_STAGE;
+
+-- You should see output like:
+/*
++------------------------------------------------------------+
+| name                                                       |
++------------------------------------------------------------+
+| s3://dpa-silver/promotions_enriched/promo_start_year=2024/ |
+| s3://dpa-silver/promotions_enriched/promo_start_year=2024/ |
++------------------------------------------------------------+
+*/
+
+-- ============================================================================
+-- STEP 5: CREATE STAGING TABLE
+-- ============================================================================
+
+CREATE OR REPLACE TABLE ANALYTICS_PROD.STAGING.STG_PROMOTIONS_ENRICHED (
+    -- Promotion identifiers
+    PROMOTION_ID VARCHAR(100) NOT NULL,
+    PRODUCT_ID VARCHAR(100) NOT NULL,
+    
+    -- Dates (from Bronze/Silver)
+    START_DATE DATE NOT NULL,
+    END_DATE DATE NOT NULL,
+    PROMO_START_DATE VARCHAR(20),
+    PROMO_END_DATE VARCHAR(20),
+    
+    -- Promotion details
+    PROMO_TYPE VARCHAR(50),
+    DISCOUNT_PERCENTAGE FLOAT,
+    DISCOUNT_CATEGORY VARCHAR(20),
+    BUDGET_USD FLOAT,
+    BUDGET_PER_DAY FLOAT,
+    PROMO_DURATION_DAYS INT,
+    
+    -- Geographic info
+    REGION VARCHAR(50),
+    STATE VARCHAR(50),
+    CITY VARCHAR(100),
+    CHANNEL VARCHAR(50),
+    TARGET_AUDIENCE VARCHAR(100),
+    
+    -- Product master data
+    MASTER_PRODUCT_NAME VARCHAR(200),
+    MASTER_BRAND VARCHAR(100),
+    MASTER_CATEGORY VARCHAR(100),
+    SUBCATEGORY VARCHAR(100),
+    MASTER_UNIT_PRICE FLOAT,
+    COST_PRICE FLOAT,
+    SUPPLIER VARCHAR(100),
+    PACK_SIZE VARCHAR(50),
+    UOM VARCHAR(20),
+    
+    -- Store data
+    STORE_ID VARCHAR(50),
+    STORE_NAME VARCHAR(200),
+    STORE_TYPE VARCHAR(50),
+    SIZE_SQFT INT,
+    AVG_DAILY_FOOTTRAFFIC INT,
+    POTENTIAL_CUSTOMER_REACH INT,
+    
+    -- Calculated financial metrics
+    MARGIN_BEFORE_PROMO FLOAT,
+    DISCOUNTED_PRICE FLOAT,
+    MARGIN_AFTER_PROMO FLOAT,
+    MARGIN_EROSION_PCT FLOAT,
+    MARGIN_EROSION_USD FLOAT,
+    EFFECTIVE_DISCOUNT_USD FLOAT,
+    IS_UNPROFITABLE INT,
+    BREAKEVEN_UNITS FLOAT,
+    BREAKEVEN_DAILY_SALES FLOAT,
+    
+    -- Temporal features
+    PROMO_START_YEAR INT,
+    PROMO_START_MONTH INT,
+    PROMO_START_MONTH_NAME VARCHAR(20),
+    PROMO_START_QUARTER INT,
+    PROMO_START_DAY_OF_WEEK INT,
+    PROMO_START_DAY_NAME VARCHAR(20),
+    PROMO_START_WEEK_OF_YEAR INT,
+    IS_WEEKEND_START INT,
+    IS_MONTH_START_PROMO INT,
+    IS_MONTH_END_PROMO INT,
+    SEASON VARCHAR(20),
+    IS_HOLIDAY_ALIGNED INT,
+    
+    -- Status flags
+    IS_CURRENTLY_ACTIVE INT,
+    DAYS_UNTIL_START INT,
+    DAYS_UNTIL_END INT,
+    
+    -- Derived metrics
+    PROMO_INTENSITY_SCORE FLOAT,
+    HIGH_RISK_FLAG INT,
+    RISK_CATEGORY VARCHAR(50),
+    VALUE_TIER VARCHAR(50),
+    
+    -- Metadata
+    INGESTION_TIMESTAMP TIMESTAMP_NTZ,
+    INGESTION_DATE DATE,
+    SOURCE_FILE VARCHAR(500),
+    FILE_SIZE_BYTES BIGINT,
+    JOB_RUN_ID VARCHAR(100),
+    DATA_QUALITY_LAYER VARCHAR(20),
+    SILVER_PROCESSING_TIMESTAMP TIMESTAMP_NTZ,
+    SILVER_PROCESSING_DATE DATE,
+    SILVER_JOB_RUN_ID VARCHAR(100),
+    
+    -- Snowflake metadata
+    _SNOWFLAKE_LOADED_AT TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+)
+COMMENT = 'Staging table for promotions enriched data from S3 Silver layer';
+
+-- Create clustering keys for better query performance
+ALTER TABLE ANALYTICS_PROD.STAGING.STG_PROMOTIONS_ENRICHED 
+    CLUSTER BY (PROMO_START_YEAR, PROMO_START_MONTH, MASTER_CATEGORY);
+
+SHOW TABLES LIKE 'STG_PROMOTIONS_ENRICHED';
+
+-- ============================================================================
+-- STEP 6: CREATE SNOWPIPE FOR AUTO-LOADING
+-- ============================================================================
+
+-- Create Snowpipe to auto-load data from S3
+CREATE OR REPLACE PIPE ANALYTICS_PROD.STAGING.PIPE_PROMOTIONS_ENRICHED
+    AUTO_INGEST = TRUE
+    AWS_SNS_TOPIC = 'arn:aws:sns:us-east-1:123456789012:dpa-s3-silver-notifications'
+    COMMENT = 'Snowpipe to auto-load promotions from S3 Silver layer'
+AS
+COPY INTO ANALYTICS_PROD.STAGING.STG_PROMOTIONS_ENRICHED
+FROM (
+    SELECT 
+        $1:promotion_id::VARCHAR AS PROMOTION_ID,
+        $1:product_id::VARCHAR AS PRODUCT_ID,
+        $1:start_date::DATE AS START_DATE,
+        $1:end_date::DATE AS END_DATE,
+        $1:promo_start_date::VARCHAR AS PROMO_START_DATE,
+        $1:promo_end_date::VARCHAR AS PROMO_END_DATE,
+        $1:promo_type::VARCHAR AS PROMO_TYPE,
+        $1:discount_percentage::FLOAT AS DISCOUNT_PERCENTAGE,
+        $1:discount_category::VARCHAR AS DISCOUNT_CATEGORY,
+        $1:budget_usd::FLOAT AS BUDGET_USD,
+        $1:budget_per_day::FLOAT AS BUDGET_PER_DAY,
+        $1:promo_duration_days::INT AS PROMO_DURATION_DAYS,
+        $1:region::VARCHAR AS REGION,
+        $1:state::VARCHAR AS STATE,
+        $1:city::VARCHAR AS CITY,
+        $1:channel::VARCHAR AS CHANNEL,
+        $1:target_audience::VARCHAR AS TARGET_AUDIENCE,
+        $1:master_product_name::VARCHAR AS MASTER_PRODUCT_NAME,
+        $1:master_brand::VARCHAR AS MASTER_BRAND,
+        $1:master_category::VARCHAR AS MASTER_CATEGORY,
+        $1:subcategory::VARCHAR AS SUBCATEGORY,
+        $1:master_unit_price::FLOAT AS MASTER_UNIT_PRICE,
+        $1:cost_price::FLOAT AS COST_PRICE,
+        $1:supplier::VARCHAR AS SUPPLIER,
+        $1:pack_size::VARCHAR AS PACK_SIZE,
+        $1:uom::VARCHAR AS UOM,
+        $1:store_id::VARCHAR AS STORE_ID,
+        $1:store_name::VARCHAR AS STORE_NAME,
+        $1:store_type::VARCHAR AS STORE_TYPE,
+        $1:size_sqft::INT AS SIZE_SQFT,
+        $1:avg_daily_foottraffic::INT AS AVG_DAILY_FOOTTRAFFIC,
+        $1:potential_customer_reach::INT AS POTENTIAL_CUSTOMER_REACH,
+        $1:margin_before_promo::FLOAT AS MARGIN_BEFORE_PROMO,
+        $1:discounted_price::FLOAT AS DISCOUNTED_PRICE,
+        $1:margin_after_promo::FLOAT AS MARGIN_AFTER_PROMO,
+        $1:margin_erosion_pct::FLOAT AS MARGIN_EROSION_PCT,
+        $1:margin_erosion_usd::FLOAT AS MARGIN_EROSION_USD,
+        $1:effective_discount_usd::FLOAT AS EFFECTIVE_DISCOUNT_USD,
+        $1:is_unprofitable::INT AS IS_UNPROFITABLE,
+        $1:breakeven_units::FLOAT AS BREAKEVEN_UNITS,
+        $1:breakeven_daily_sales::FLOAT AS BREAKEVEN_DAILY_SALES,
+        $1:promo_start_year::INT AS PROMO_START_YEAR,
+        $1:promo_start_month::INT AS PROMO_START_MONTH,
+        $1:promo_start_month_name::VARCHAR AS PROMO_START_MONTH_NAME,
+        $1:promo_start_quarter::INT AS PROMO_START_QUARTER,
+        $1:promo_start_day_of_week::INT AS PROMO_START_DAY_OF_WEEK,
+        $1:promo_start_day_name::VARCHAR AS PROMO_START_DAY_NAME,
+        $1:promo_start_week_of_year::INT AS PROMO_START_WEEK_OF_YEAR,
+        $1:is_weekend_start::INT AS IS_WEEKEND_START,
+        $1:is_month_start_promo::INT AS IS_MONTH_START_PROMO,
+        $1:is_month_end_promo::INT AS IS_MONTH_END_PROMO,
+        $1:season::VARCHAR AS SEASON,
+        $1:is_holiday_aligned::INT AS IS_HOLIDAY_ALIGNED,
+        $1:is_currently_active::INT AS IS_CURRENTLY_ACTIVE,
+        $1:days_until_start::INT AS DAYS_UNTIL_START,
+        $1:days_until_end::INT AS DAYS_UNTIL_END,
+        $1:promo_intensity_score::FLOAT AS PROMO_INTENSITY_SCORE,
+        $1:high_risk_flag::INT AS HIGH_RISK_FLAG,
+        $1:risk_category::VARCHAR AS RISK_CATEGORY,
+        $1:value_tier::VARCHAR AS VALUE_TIER,
+        $1:ingestion_timestamp::TIMESTAMP_NTZ AS INGESTION_TIMESTAMP,
+        $1:ingestion_date::DATE AS INGESTION_DATE,
+        $1:source_file::VARCHAR AS SOURCE_FILE,
+        $1:file_size_bytes::BIGINT AS FILE_SIZE_BYTES,
+        $1:job_run_id::VARCHAR AS JOB_RUN_ID,
+        $1:data_quality_layer::VARCHAR AS DATA_QUALITY_LAYER,
+        $1:silver_processing_timestamp::TIMESTAMP_NTZ AS SILVER_PROCESSING_TIMESTAMP,
+        $1:silver_processing_date::DATE AS SILVER_PROCESSING_DATE,
+        $1:silver_job_run_id::VARCHAR AS SILVER_JOB_RUN_ID,
+        CURRENT_TIMESTAMP() AS _SNOWFLAKE_LOADED_AT
+    FROM @S3_SILVER_STAGE
+)
+FILE_FORMAT = (TYPE = PARQUET)
+ON_ERROR = CONTINUE;
+
+-- Show Snowpipe details
+SHOW PIPES LIKE 'PIPE_PROMOTIONS_ENRICHED';
+
+-- Get the Snowpipe notification channel (SQS ARN)
+SELECT SYSTEM$PIPE_STATUS('ANALYTICS_PROD.STAGING.PIPE_PROMOTIONS_ENRICHED');
+
+/*
+IMPORTANT: Copy the notification_channel ARN
+You'll configure this in AWS S3 Event Notifications
+*/
+
+-- ============================================================================
+-- STEP 7: MANUAL LOAD (Initial Load)
+-- ============================================================================
+
+-- For initial load, manually trigger COPY INTO
+COPY INTO ANALYTICS_PROD.STAGING.STG_PROMOTIONS_ENRICHED
+FROM @S3_SILVER_STAGE
+FILE_FORMAT = (TYPE = PARQUET)
+PATTERN = '.*\\.parquet'
+ON_ERROR = CONTINUE;
+
+-- Check loaded data
+SELECT COUNT(*) AS TOTAL_RECORDS 
+FROM ANALYTICS_PROD.STAGING.STG_PROMOTIONS_ENRICHED;
+
+SELECT * 
+FROM ANALYTICS_PROD.STAGING.STG_PROMOTIONS_ENRICHED 
+LIMIT 10;
+
+-- ============================================================================
+-- STEP 8: CREATE VIEWS FOR DATA QUALITY MONITORING
+-- ============================================================================
+
+CREATE OR REPLACE VIEW ANALYTICS_PROD.STAGING.VW_DATA_QUALITY_METRICS AS
+SELECT
+    CURRENT_DATE() AS REPORT_DATE,
+    COUNT(*) AS TOTAL_RECORDS,
+    COUNT(DISTINCT PROMOTION_ID) AS UNIQUE_PROMOTIONS,
+    COUNT(*) - COUNT(DISTINCT PROMOTION_ID) AS DUPLICATE_COUNT,
+    SUM(CASE WHEN IS_UNPROFITABLE = 1 THEN 1 ELSE 0 END) AS UNPROFITABLE_COUNT,
+    ROUND(SUM(CASE WHEN IS_UNPROFITABLE = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS UNPROFITABLE_PCT,
+    SUM(CASE WHEN HIGH_RISK_FLAG = 1 THEN 1 ELSE 0 END) AS HIGH_RISK_COUNT,
+    ROUND(AVG(DISCOUNT_PERCENTAGE), 2) AS AVG_DISCOUNT_PCT,
+    ROUND(SUM(BUDGET_USD), 2) AS TOTAL_BUDGET,
+    MAX(_SNOWFLAKE_LOADED_AT) AS LAST_LOAD_TIME
+FROM ANALYTICS_PROD.STAGING.STG_PROMOTIONS_ENRICHED;
+
+-- Query data quality view
+SELECT * FROM ANALYTICS_PROD.STAGING.VW_DATA_QUALITY_METRICS;
+
+```
+
+---
+
+## 🔧 **STEP 2: CONFIGURE AWS IAM FOR SNOWFLAKE**
+
+### **Create IAM Role for Snowflake:**
+
+**File: `snowflake-s3-role.json`**
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::123456789012:user/abc12345-s"
+      },
+      "Action": "sts:AssumeRole",
+      "Condition": {
+        "StringEquals": {
+          "sts:ExternalId": "ABC12345_SFCRole=1_abcdefg123456"
+        }
+      }
+    }
+  ]
+}
+```
+
+**Create role:**
+
+```bash
+# Create IAM role
+aws iam create-role \
+    --role-name SnowflakeS3AccessRole \
+    --assume-role-policy-document file://snowflake-s3-role.json \
+    --profile dpa-prod
+
+# Attach S3 read policy
+cat > snowflake-s3-policy.json <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:GetObjectVersion",
+        "s3:ListBucket",
+        "s3:GetBucketLocation"
+      ],
+      "Resource": [
+        "arn:aws:s3:::dpa-silver/*",
+        "arn:aws:s3:::dpa-silver"
+      ]
+    }
+  ]
+}
+EOF
+
+aws iam put-role-policy \
+    --role-name SnowflakeS3AccessRole \
+    --policy-name SnowflakeS3Access \
+    --policy-document file://snowflake-s3-policy.json \
+    --profile dpa-prod
+```
+
+---
+
+### **Configure S3 Event Notification for Snowpipe:**
+
+```bash
+# Get Snowpipe SQS ARN from Snowflake
+# (From SHOW PIPES output)
+
+SNOWPIPE_SQS_ARN="arn:aws:sqs:us-east-1:123456789012:sf-snowpipe-AIDAI..."
+
+# Create S3 event notification
+cat > s3-snowpipe-notification.json <<EOF
+{
+  "QueueConfigurations": [
+    {
+      "QueueArn": "${SNOWPIPE_SQS_ARN}",
+      "Events": ["s3:ObjectCreated:*"],
+      "Filter": {
+        "Key": {
+          "FilterRules": [
+            {
+              "Name": "prefix",
+              "Value": "promotions_enriched/"
+            },
+            {
+              "Name": "suffix",
+              "Value": ".parquet"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
+EOF
+
+aws s3api put-bucket-notification-configuration \
+    --bucket dpa-silver \
+    --notification-configuration file://s3-snowpipe-notification.json \
+    --profile dpa-prod
+```
+
+✅ **Snowpipe auto-ingest configured!**
+
+---
+
+## 📊 **STEP 3: SET UP DBT PROJECT**
+
+### **Install dbt:**
+
+```bash
+# On your local machine or EC2 instance
+
+# Install dbt with Snowflake adapter
+pip install dbt-snowflake
+
+# Verify installation
+dbt --version
+
+# Output:
+# installed version: 1.7.0
+# latest version: 1.7.0
+```
+
+---
+
+### **Create dbt Project:**
+
+```bash
+# Create dbt project
+dbt init dpa_analytics
+
+# Navigate to project
+cd dpa_analytics
+
+# Project structure:
+dpa_analytics/
+├── dbt_project.yml
+├── profiles.yml
+├── models/
+│   ├── staging/
+│   ├── intermediate/
+│   └── marts/
+├── tests/
+├── macros/
+├── seeds/
+└── snapshots/
+```
+
+---
+
+### **Configure dbt Profile:**
+
+**File: `~/.dbt/profiles.yml`**
+
+```yaml
+dpa_analytics:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: abc12345.us-east-1
+      user: yourname@dpa.com
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: DATA_ENGINEER
+      database: ANALYTICS_PROD
+      warehouse: COMPUTE_WH_ETL
+      schema: DBT_ANALYTICS
+      threads: 4
+      client_session_keep_alive: False
+      
+    prod:
+      type: snowflake
+      account: abc12345.us-east-1
+      user: dbt_service_account@dpa.com
+      authenticator: externalbrowser  # Or use key-pair authentication
+      role: DATA_ENGINEER
+      database: ANALYTICS_PROD
+      warehouse: COMPUTE_WH_ETL
+      schema: DBT_ANALYTICS
+      threads: 8
+      client_session_keep_alive: True
+```
+
+**Set password:**
+
+```bash
+export SNOWFLAKE_PASSWORD='your_password_here'
+```
+
+---
+
+### **Test dbt Connection:**
+
+```bash
+cd dpa_analytics
+
+dbt debug
+
+# Output:
+# Connection test: [OK connection ok]
+```
+
+---
+
+## 🔨 **STEP 4: CREATE DBT MODELS (GOLD LAYER)**
+
+### **Configure dbt Project:**
+
+**File: `dbt_project.yml`**
+
+```yaml
+name: 'dpa_analytics'
+version: '1.0.0'
+config-version: 2
+
+profile: 'dpa_analytics'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  dpa_analytics:
+    # Staging models
+    staging:
+      +materialized: view
+      +schema: staging
+      
+    # Intermediate models
+    intermediate:
+      +materialized: view
+      +schema: intermediate
+      
+    # Gold/Mart models
+    marts:
+      +materialized: table
+      +schema: gold
+      core:
+        +materialized: table
+      marketing:
+        +materialized: table
+      finance:
+        +materialized: incremental
+        +on_schema_change: "append_new_columns"
+
+# Tests
+tests:
+  dpa_analytics:
+    +store_failures: true
+    +schema: test_results
+
+# Seeds
+seeds:
+  dpa_analytics:
+    +schema: seeds
+```
+
+---
+
+### **Create Source Configuration:**
+
+**File: `models/staging/sources.yml`**
+
+```yaml
+version: 2
+
+sources:
+  - name: staging
+    database: ANALYTICS_PROD
+    schema: STAGING
+    description: "Staging tables loaded from S3 Silver layer via Snowpipe"
+    
+    tables:
+      - name: stg_promotions_enriched
+        description: "Enriched promotions data from Silver layer"
+        columns:
+          - name: promotion_id
+            description: "Unique promotion identifier"
+            tests:
+              - unique
+              - not_null
+          
+          - name: product_id
+            description: "Product identifier"
+            tests:
+              - not_null
+          
+          - name: start_date
+            description: "Promotion start date"
+            tests:
+              - not_null
+          
+          - name: end_date
+            description: "Promotion end date"
+            tests:
+              - not_null
+          
+          - name: discount_percentage
+            description: "Discount percentage (0-100)"
+            tests:
+              - not_null
+              - dbt_utils.accepted_range:
+                  min_value: 0
+                  max_value: 100
+          
+          - name: budget_usd
+            description: "Total promotion budget in USD"
+            tests:
+              - not_null
+              - dbt_utils.accepted_range:
+                  min_value: 0
+        
+        freshness:
+          warn_after: {count: 6, period: hour}
+          error_after: {count: 12, period: hour}
+        
+        loaded_at_field: _snowflake_loaded_at
+```
+
+---
+
+### **Create Staging Model:**
+
+**File: `models/staging/stg_promotions.sql`**
+
+```sql
+{{
+    config(
+        materialized='view',
+        tags=['staging', 'promotions']
+    )
+}}
+
+WITH source AS (
+    SELECT * 
+    FROM {{ source('staging', 'stg_promotions_enriched') }}
+),
+
+renamed AS (
+    SELECT
+        -- IDs
+        promotion_id,
+        product_id,
+        store_id,
+        
+        -- Dates
+        start_date,
+        end_date,
+        promo_duration_days,
+        promo_start_year,
+        promo_start_month,
+        promo_start_month_name,
+        promo_start_quarter,
+        season,
+        
+        -- Promotion details
+        promo_type,
+        discount_percentage,
+        discount_category,
+        budget_usd,
+        budget_per_day,
+        channel,
+        target_audience,
+        region,
+        state,
+        city,
+        
+        -- Product info
+        master_product_name AS product_name,
+        master_brand AS brand,
+        master_category AS category,
+        subcategory,
+        master_unit_price AS unit_price,
+        cost_price,
+        supplier,
+        
+        -- Store info
+        store_name,
+        store_type,
+        size_sqft AS store_size_sqft,
+        avg_daily_foottraffic,
+        potential_customer_reach,
+        
+        -- Financial metrics
+        margin_before_promo,
+        discounted_price,
+        margin_after_promo,
+        margin_erosion_pct,
+        margin_erosion_usd,
+        effective_discount_usd,
+        breakeven_units,
+        breakeven_daily_sales,
+        
+        -- Flags
+        is_unprofitable,
+        high_risk_flag,
+        risk_category,
+        value_tier,
+        is_currently_active,
+        is_weekend_start,
+        is_holiday_aligned,
+        
+        -- Derived metrics
+        promo_intensity_score,
+        
+        -- Metadata
+        _snowflake_loaded_at,
+        silver_processing_timestamp
+        
+    FROM source
+)
+
+SELECT * FROM renamed
+```
+
+---
+
+### **Create Gold Model 1: Monthly Summary:**
+
+**File: `models/marts/core/monthly_promo_summary.sql`**
+
+```sql
+{{
+    config(
+        materialized='table',
+        tags=['gold', 'core', 'monthly'],
+        cluster_by=['year', 'month']
+    )
+}}
+
+WITH promotions AS (
+    SELECT * FROM {{ ref('stg_promotions') }}
+),
+
+monthly_agg AS (
+    SELECT
+        promo_start_year AS year,
+        promo_start_month AS month,
+        promo_start_month_name AS month_name,
+        promo_start_quarter AS quarter,
+        season,
+        region,
+        
+        -- Promotion counts
+        COUNT(DISTINCT promotion_id) AS total_promotions,
+        COUNT(DISTINCT CASE WHEN is_currently_active = 1 THEN promotion_id END) AS active_promotions,
+        COUNT(DISTINCT product_id) AS unique_products,
+        COUNT(DISTINCT brand) AS unique_brands,
+        COUNT(DISTINCT category) AS unique_categories,
+        COUNT(DISTINCT store_id) AS stores_with_promos,
+        
+        -- Financial metrics
+        ROUND(SUM(budget_usd), 2) AS total_budget,
+        ROUND(AVG(budget_usd), 2) AS avg_budget_per_promo,
+        ROUND(SUM(budget_per_day), 2) AS total_daily_budget,
+        
+        -- Discount metrics
+        ROUND(AVG(discount_percentage), 2) AS avg_discount_pct,
+        ROUND(MIN(discount_percentage), 2) AS min_discount_pct,
+        ROUND(MAX(discount_percentage), 2) AS max_discount_pct,
+        
+        -- Duration metrics
+        ROUND(AVG(promo_duration_days), 1) AS avg_duration_days,
+        ROUND(MIN(promo_duration_days), 0) AS min_duration_days,
+        ROUND(MAX(promo_duration_days), 0) AS max_duration_days,
+        
+        -- Margin impact
+        ROUND(AVG(margin_erosion_pct), 2) AS avg_margin_erosion_pct,
+        ROUND(SUM(margin_erosion_usd), 2) AS total_margin_erosion_usd,
+        
+        -- Risk metrics
+        SUM(CASE WHEN is_unprofitable = 1 THEN 1 ELSE 0 END) AS unprofitable_count,
+        ROUND(SUM(CASE WHEN is_unprofitable = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS unprofitable_pct,
+        SUM(CASE WHEN high_risk_flag = 1 THEN 1 ELSE 0 END) AS high_risk_count,
+        ROUND(SUM(CASE WHEN high_risk_flag = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS high_risk_pct,
+        
+        -- Promotion type breakdown
+        SUM(CASE WHEN discount_category = 'Low' THEN 1 ELSE 0 END) AS low_discount_count,
+        SUM(CASE WHEN discount_category = 'Medium' THEN 1 ELSE 0 END) AS medium_discount_count,
+        SUM(CASE WHEN discount_category = 'High' THEN 1 ELSE 0 END) AS high_discount_count,
+        SUM(CASE WHEN discount_category = 'Very High' THEN 1 ELSE 0 END) AS very_high_discount_count,
+        
+        -- Timing metrics
+        SUM(CASE WHEN is_weekend_start = 1 THEN 1 ELSE 0 END) AS weekend_start_count,
+        SUM(CASE WHEN is_holiday_aligned = 1 THEN 1 ELSE 0 END) AS holiday_aligned_count,
+        
+        -- Metadata
+        CURRENT_TIMESTAMP() AS dbt_updated_at
+        
+    FROM promotions
+    GROUP BY 1,2,3,4,5,6
+)
+
+SELECT * FROM monthly_agg
+ORDER BY year DESC, month DESC, region
+```
+
+---
+
+### **Create Gold Model 2: Product Performance:**
+
+**File: `models/marts/core/product_promo_performance.sql`**
+
+```sql
+{{
+    config(
+        materialized='table',
+        tags=['gold', 'core', 'product'],
+        cluster_by=['category', 'brand']
+    )
+}}
+
+WITH promotions AS (
+    SELECT * FROM {{ ref('stg_promotions') }}
+),
+
+product_metrics AS (
+    SELECT
+        product_id,
+        product_name,
+        brand,
+        category,
+        subcategory,
+        supplier,
+        
+        -- Promotion statistics
+        COUNT(DISTINCT promotion_id) AS total_promotions,
+        ROUND(AVG(promo_duration_days), 1) AS avg_promo_duration,
+        ROUND(AVG(discount_percentage), 2) AS avg_discount_pct,
+        ROUND(MAX(discount_percentage), 2) AS max_discount_pct,
+        
+        -- Budget metrics
+        ROUND(SUM(budget_usd), 2) AS total_budget_invested,
+        ROUND(AVG(budget_usd), 2) AS avg_budget_per_promo,
+        
+        -- Pricing
+        ROUND(AVG(unit_price), 2) AS avg_unit_price,
+        ROUND(AVG(cost_price), 2) AS avg_cost_price,
+        ROUND(AVG(discounted_price), 2) AS avg_discounted_price,
+        
+        -- Margin analysis
+        ROUND(AVG(margin_before_promo), 2) AS avg_margin_before_promo,
+        ROUND(AVG(margin_after_promo), 2) AS avg_margin_after_promo,
+        ROUND(AVG(margin_erosion_pct), 2) AS avg_margin_erosion_pct,
+        ROUND(SUM(margin_erosion_usd), 2) AS total_margin_loss,
+        
+        -- Risk indicators
+        SUM(CASE WHEN is_unprofitable = 1 THEN 1 ELSE 0 END) AS unprofitable_promo_count,
+        ROUND(SUM(CASE WHEN is_unprofitable = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS unprofitable_pct,
+        
+        -- Breakeven analysis
+        ROUND(AVG(breakeven_units), 1) AS avg_breakeven_units,
+        ROUND(AVG(breakeven_daily_sales), 1) AS avg_breakeven_daily_sales,
+        
+        -- Regional distribution
+        COUNT(DISTINCT region) AS regions_promoted_in,
+        COUNT(DISTINCT store_id) AS stores_promoted_in,
+        
+        -- Temporal patterns
+        SUM(CASE WHEN season = 'Winter' THEN 1 ELSE 0 END) AS winter_promos,
+        SUM(CASE WHEN season = 'Spring' THEN 1 ELSE 0 END) AS spring_promos,
+        SUM(CASE WHEN season = 'Summer' THEN 1 ELSE 0 END) AS summer_promos,
+        SUM(CASE WHEN season = 'Fall' THEN 1 ELSE 0 END) AS fall_promos,
+        
+        -- Latest activity
+        MAX(start_date) AS last_promo_date,
+        DATEDIFF(day, MAX(start_date), CURRENT_DATE()) AS days_since_last_promo,
+        
+        -- Current status
+        SUM(CASE WHEN is_currently_active = 1 THEN 1 ELSE 0 END) AS active_promos_count,
+        
+        -- Ranking
+        ROW_NUMBER() OVER (PARTITION BY category ORDER BY SUM(budget_usd) DESC) AS rank_in_category,
+        
+        -- Metadata
+        CURRENT_TIMESTAMP() AS dbt_updated_at
+        
+    FROM promotions
+    GROUP BY 1,2,3,4,5,6
+)
+
+SELECT * FROM product_metrics
+ORDER BY total_budget_invested DESC
+```
+
+---
+
+### **Create Gold Model 3: Brand Effectiveness:**
+
+**File: `models/marts/marketing/brand_promo_effectiveness.sql`**
+
+```sql
+{{
+    config(
+        materialized='table',
+        tags=['gold', 'marketing', 'brand']
+    )
+}}
+
+WITH promotions AS (
+    SELECT * FROM {{ ref('stg_promotions') }}
+),
+
+brand_analysis AS (
+    SELECT
+        brand,
+        category,
+        
+        -- Volume metrics
+        COUNT(DISTINCT promotion_id) AS total_promotions,
+        COUNT(DISTINCT product_id) AS products_promoted,
+        COUNT(DISTINCT region) AS regions_covered,
+        
+        -- Investment
+        ROUND(SUM(budget_usd), 2) AS total_investment,
+        ROUND(AVG(budget_usd), 2) AS avg_investment_per_promo,
+        
+        -- Discount strategy
+        ROUND(AVG(discount_percentage), 2) AS avg_discount,
+        MODE(discount_category) AS most_common_discount_tier,
+        
+        -- Duration strategy
+        ROUND(AVG(promo_duration_days), 1) AS avg_promo_duration,
+        
+        -- Profitability
+        ROUND(AVG(margin_after_promo), 2) AS avg_margin_after_promo,
+        ROUND(AVG(margin_erosion_pct), 2) AS avg_margin_erosion_pct,
+        SUM(CASE WHEN is_unprofitable = 1 THEN 1 ELSE 0 END) AS unprofitable_promos,
+        ROUND(SUM(CASE WHEN is_unprofitable = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS unprofitable_rate,
+        
+        -- Risk profile
+        ROUND(AVG(promo_intensity_score), 2) AS avg_intensity_score,
+        SUM(CASE WHEN high_risk_flag = 1 THEN 1 ELSE 0 END) AS high_risk_promos,
+        
+        -- Effectiveness score (custom metric)
+        ROUND(
+            (AVG(discount_percentage) * 0.3) +
+            (AVG(promo_duration_days) * 0.2) +
+            ((100 - AVG(margin_erosion_pct)) * 0.3) +
+            ((100 - (SUM(CASE WHEN is_unprofitable = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*))) * 0.2)
+        , 2) AS effectiveness_score,
+        
+        -- Seasonal preferences
+        MODE(season) AS preferred_season,
+        
+        -- Channel preference
+        MODE(channel) AS primary_channel,
+        
+        -- Latest activity
+        MAX(start_date) AS last_promo_date,
+        
+        -- Metadata
+        CURRENT_TIMESTAMP() AS dbt_updated_at
+        
+    FROM promotions
+    GROUP BY 1, 2
+)
+
+SELECT * FROM brand_analysis
+ORDER BY effectiveness_score DESC
+```
+
+---
+
+### **Create Gold Model 4: Regional Analysis:**
+
+**File: `models/marts/core/regional_promo_analysis.sql`**
+
+```sql
+{{
+    config(
+        materialized='table',
+        tags=['gold', 'core', 'regional']
+    )
+}}
+
+WITH promotions AS (
+    SELECT * FROM {{ ref('stg_promotions') }}
+),
+
+regional_metrics AS (
+    SELECT
+        region,
+        state,
+        
+        -- Promotion volume
+        COUNT(DISTINCT promotion_id) AS total_promotions,
+        COUNT(DISTINCT product_id) AS unique_products,
+        COUNT(DISTINCT brand) AS unique_brands,
+        COUNT(DISTINCT store_id) AS stores_with_promos,
+        
+        -- Investment
+        ROUND(SUM(budget_usd), 2) AS total_budget,
+        ROUND(AVG(budget_usd), 2) AS avg_budget_per_promo,
+        
+        -- Discount patterns
+        ROUND(AVG(discount_percentage), 2) AS avg_discount_pct,
+        MODE(discount_category) AS most_common_discount_level,
+        
+        -- Customer reach
+        ROUND(SUM(potential_customer_reach), 0) AS total_potential_reach,
+        ROUND(AVG(potential_customer_reach), 0) AS avg_reach_per_promo,
+        
+        -- Profitability
+        SUM(CASE WHEN is_unprofitable = 1 THEN 1 ELSE 0 END) AS unprofitable_count,
+        ROUND(SUM(CASE WHEN is_unprofitable = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS unprofitable_pct,
+        ROUND(AVG(margin_after_promo), 2) AS avg_margin_after_promo,
+        
+        -- Risk
+        SUM(CASE WHEN high_risk_flag = 1 THEN 1 ELSE 0 END) AS high_risk_count,
+        
+        -- Current status
+        SUM(CASE WHEN is_currently_active = 1 THEN 1 ELSE 0 END) AS active_promos,
+        
+        -- Metadata
+        CURRENT_TIMESTAMP() AS dbt_updated_at
+        
+    FROM promotions
+    GROUP BY 1, 2
+)
+
+SELECT * FROM regional_metrics
+ORDER BY total_budget DESC
+```
+
+---
+
+### **Create Gold Model 5: Promo ROI Dashboard:**
+
+**File: `models/marts/finance/promo_roi_dashboard.sql`**
+
+```sql
+{{
+    config(
+        materialized='incremental',
+        unique_key='promotion_id',
+        tags=['gold', 'finance', 'roi'],
+        on_schema_change='append_new_columns'
+    )
+}}
+
+WITH promotions AS (
+    SELECT * 
+    FROM {{ ref('stg_promotions') }}
+    
+    {% if is_incremental() %}
+    -- Only process new/updated records
+    WHERE silver_processing_timestamp > (SELECT MAX(dbt_updated_at) FROM {{ this }})
+    {% endif %}
+),
+
+roi_calc AS (
+    SELECT
+        promotion_id,
+        product_id,
+        product_name,
+        brand,
+        category,
+        region,
+        
+        -- Dates
+        start_date,
+        end_date,
+        promo_duration_days,
+        
+        -- Investment
+        budget_usd AS total_investment,
+        budget_per_day AS daily_investment,
+        
+        -- Pricing
+        unit_price AS original_price,
+        discounted_price,
+        discount_percentage,
+        effective_discount_usd,
+        
+        -- Costs & Margins
+        cost_price,
+        margin_before_promo,
+        margin_after_promo,
+        margin_erosion_usd,
+        margin_erosion_pct,
+        
+        -- Breakeven analysis
+        breakeven_units,
+        breakeven_daily_sales,
+        
+        -- ROI calculations (will be updated with actual sales data later)
+        -- For now, using estimated metrics
+        
+        CASE 
+            WHEN is_unprofitable = 1 THEN 'Negative'
+            WHEN margin_erosion_pct > 75 THEN 'Very Low'
+            WHEN margin_erosion_pct > 50 THEN 'Low'
+            WHEN margin_erosion_pct > 25 THEN 'Medium'
+            ELSE 'High'
+        END AS expected_roi_tier,
+        
+        -- Risk flags
+        is_unprofitable,
+        high_risk_flag,
+        risk_category,
+        value_tier,
+        
+        -- Potential reach
+        potential_customer_reach,
+        
+        -- Status
+        is_currently_active,
+        CASE 
+            WHEN is_currently_active = 1 THEN 'Active'
+            WHEN start_date > CURRENT_DATE() THEN 'Upcoming'
+            ELSE 'Completed'
+        END AS promo_status,
+        
+        -- Metadata
+        CURRENT_TIMESTAMP() AS dbt_updated_at
+        
+    FROM promotions
+)
+
+SELECT * FROM roi_calc
+```
+
+---
+
+## 🧪 **STEP 5: CREATE DBT TESTS**
+
+### **Create Custom Tests:**
+
+**File: `models/marts/core/schema.yml`**
+
+```yaml
+version: 2
+
+models:
+  - name: monthly_promo_summary
+    description: "Monthly aggregated promotion metrics by region"
+    columns:
+      - name: year
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 2020
+              max_value: 2030
+      
+      - name: month
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 12
+      
+      - name: total_budget
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+      
+      - name: unprofitable_pct
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 100
+        
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - year
+            - month
+            - region
+
+  - name: product_promo_performance
+    description: "Product-level promotion performance metrics"
+    columns:
+      - name: product_id
+        tests:
+          - unique
+          - not_null
+      
+      - name: total_budget_invested
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+      
+      - name: unprofitable_pct
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 100
+
+  - name: brand_promo_effectiveness
+    description: "Brand-level promotional effectiveness analysis"
+    columns:
+      - name: effectiveness_score
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 100
+```
+
+---
+
+## 🚀 **STEP 6: RUN DBT MODELS**
+
+```bash
+cd dpa_analytics
+
+# Install dbt packages (for tests)
+cat > packages.yml <<EOF
+packages:
+  - package: dbt-labs/dbt_utils
+    version: 1.1.1
+EOF
+
+dbt deps
+
+# Run all models
+dbt run
+
+# Output:
+# Running with dbt=1.7.0
+# Found 5 models, 12 tests, 0 snapshots, 0 analyses, 0 macros, 0 operations, 0 seed files, 1 source, 0 exposures, 0 metrics
+# 
+# Concurrency: 4 threads
+# 
+# 1 of 5 START sql view model staging.stg_promotions ..................... [RUN]
+# 1 of 5 OK created sql view model staging.stg_promotions ................ [SUCCESS in 2.34s]
+# 2 of 5 START sql table model gold.monthly_promo_summary ................ [RUN]
+# 3 of 5 START sql table model gold.product_promo_performance ............ [RUN]
+# 2 of 5 OK created sql table model gold.monthly_promo_summary ........... [SUCCESS in 8.45s]
+# 4 of 5 START sql table model gold.brand_promo_effectiveness ............ [RUN]
+# 3 of 5 OK created sql table model gold.product_promo_performance ....... [SUCCESS in 9.12s]
+# 5 of 5 START sql table model gold.regional_promo_analysis .............. [RUN]
+# 4 of 5 OK created sql table model gold.brand_promo_effectiveness ....... [SUCCESS in 7.89s]
+# 5 of 5 OK created sql table model gold.regional_promo_analysis ......... [SUCCESS in 6.23s]
+# 
+# Finished running 1 view model, 4 table models in 0 hours 0 minutes and 15.67 seconds.
+# 
+# Completed successfully
+
+# Run tests
+dbt test
+
+# Output:
+# Running with dbt=1.7.0
+# Found 5 models, 12 tests, 0 snapshots...
+# 
+# 1 of 12 START test not_null_monthly_promo_summary_year ................. [RUN]
+# 1 of 12 PASS not_null_monthly_promo_summary_year ....................... [PASS in 1.23s]
+# 2 of 12 START test unique_product_promo_performance_product_id ......... [RUN]
+# 2 of 12 PASS unique_product_promo_performance_product_id ............... [PASS in 1.45s]
+# ...
+# 12 of 12 PASS dbt_utils_accepted_range_unprofitable_pct ................ [PASS in 1.67s]
+# 
+# Finished running 12 tests in 0 hours 0 minutes and 18.45 seconds.
+# 
+# Completed successfully
+
+# Generate documentation
+dbt docs generate
+dbt docs serve
+
+# Opens http://localhost:8080 with interactive documentation
+```
+
+---
+
+## 📊 **STEP 7: VERIFY GOLD LAYER IN SNOWFLAKE**
+
+```sql
+-- Switch to Gold schema
+USE SCHEMA ANALYTICS_PROD.GOLD;
+
+-- List all tables
+SHOW TABLES;
+
+/*
++--------------------------------------+
+| name                                 |
++--------------------------------------+
+| MONTHLY_PROMO_SUMMARY                |
+| PRODUCT_PROMO_PERFORMANCE            |
+| BRAND_PROMO_EFFECTIVENESS            |
+| REGIONAL_PROMO_ANALYSIS              |
+| PROMO_ROI_DASHBOARD                  |
++--------------------------------------+
+*/
+
+-- Query monthly summary
+SELECT * 
+FROM MONTHLY_PROMO_SUMMARY 
+WHERE year = 2024 
+ORDER BY month DESC, total_budget DESC
+LIMIT 10;
+
+-- Query product performance
+SELECT 
+    product_name,
+    brand,
+    category,
+    total_promotions,
+    total_budget_invested,
+    avg_discount_pct,
+    unprofitable_pct,
+    rank_in_category
+FROM PRODUCT_PROMO_PERFORMANCE
+WHERE category = 'Personal Care'
+ORDER BY total_budget_invested DESC
+LIMIT 10;
+
+-- Query brand effectiveness
+SELECT 
+    brand,
+    total_promotions,
+    total_investment,
+    avg_discount,
+    unprofitable_rate,
+    effectiveness_score
+FROM BRAND_PROMO_EFFECTIVENESS
+ORDER BY effectiveness_score DESC
+LIMIT 10;
+
+-- Regional analysis
+SELECT 
+    region,
+    state,
+    total_promotions,
+    total_budget,
+    avg_discount_pct,
+    unprofitable_pct,
+    active_promos
+FROM REGIONAL_PROMO_ANALYSIS
+ORDER BY total_budget DESC;
+```
+
+---
+
+## 📧 **YOU UPDATE JIRA:**
+
+```
+CPG-403: Silver → Gold (Snowflake + dbt)
+Status: ✅ DONE
+
+Comments:
+─────────────────────────────────────────────────────
+✅ Snowflake infrastructure set up
+✅ Snowpipe auto-ingest configured
+✅ dbt project created with 5 Gold models
+✅ All dbt tests passing (12/12)
+✅ Documentation generated
+✅ Data verified in Snowflake
+
+Gold Layer Tables Created:
+├─ MONTHLY_PROMO_SUMMARY (45,234 rows)
+├─ PRODUCT_PROMO_PERFORMANCE (5,234 products)
+├─ BRAND_PROMO_EFFECTIVENESS (45 brands)
+├─ REGIONAL_PROMO_ANALYSIS (156 regions)
+└─ PROMO_ROI_DASHBOARD (45,234 promotions)
+
+Next: Schedule dbt runs via Airflow
+─────────────────────────────────────────────────────
+```
+
+---
+
+## ✅ **GOLD LAYER COMPLETE!**
+
+**What you've built:**
+- ✅ Snowflake as cloud data warehouse
+- ✅ Snowpipe for auto-loading from S3
+- ✅ dbt for SQL-based transformations
+- ✅ 5 Gold layer business-ready tables
+- ✅ Data quality tests
+- ✅ Documentation
+
+**Ready for next step:**
+1. **ML Pipeline (SageMaker)** ← Predict promotional lift
+2. **Orchestration (Airflow MWAA)** ← Schedule entire pipeline
+3. **Real-time Streaming (Kinesis)** ← Real-time promo tracking
+4. **BI Dashboards (Tableau/QuickSight)** ← Visualize Gold data
+
+**Which one?** 🚀
