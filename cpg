@@ -1,0 +1,421 @@
+Perfect 🔥 Now we simulate a **real enterprise-grade pipeline** for:
+
+* **Company**: Decision Point Analytics
+* **Client**: Tata Consumer Products (TCPL – CPG domain)
+
+We will assume a **real FMCG use case**:
+
+> 🎯 **Use Case**: Sales forecasting + distributor performance analytics + promotion effectiveness
+> Cloud: AWS
+> Stack: S3 + Glue + Catalog + Athena + Snowflake + SageMaker + Lambda + Airflow
+
+This will feel like what you may actually work on.
+
+---
+
+# 🏭 BUSINESS CONTEXT (TCPL – CPG)
+
+TCPL sells:
+
+* Tata Tea
+* Tata Salt
+* Packaged Foods
+
+Data comes from:
+
+* Distributor ERP
+* Retail POS
+* SAP
+* Promotion systems
+* Marketing tools
+
+Goal:
+
+* Forecast demand
+* Track distributor fill rates
+* Optimize promotions
+* Reduce stockouts
+
+---
+
+# 🏗️ FULL ENTERPRISE ARCHITECTURE
+
+## 1️⃣ Data Sources
+
+```
+Distributor SAP (Daily Sales)
+Retail POS data
+Promotion master data
+Product master data
+Inventory stock reports
+```
+
+Data formats:
+
+* CSV
+* JSON
+* Excel
+* API dumps
+
+---
+
+# 🪣 2️⃣ S3 DATA LAKE DESIGN
+
+```
+s3://tcpl-data-lake/
+
+    bronze/
+        distributor_sales/
+        retail_pos/
+        promotions/
+        product_master/
+        inventory/
+
+    silver/
+        cleaned_sales/
+        enriched_sales/
+
+    gold/
+        sales_mart/
+        promo_effectiveness_mart/
+        demand_forecast_features/
+```
+
+---
+
+# 🥉 3️⃣ BRONZE LAYER (Raw Ingestion)
+
+## Example Raw Sales File
+
+```
+invoice_id,distributor_id,sku_id,qty,amount,invoice_date
+1001,D101,SKU001,50,2500,2026-02-18
+```
+
+Stored as:
+
+```
+s3://tcpl-data-lake/bronze/distributor_sales/2026/02/18/file.csv
+```
+
+No transformation.
+
+---
+
+# 🕷️ 4️⃣ Glue Crawler
+
+Crawler scans:
+
+```
+bronze/distributor_sales/
+```
+
+Creates table in Glue Catalog:
+
+```
+bronze_distributor_sales
+```
+
+Schema inferred.
+
+Now Athena can query raw.
+
+---
+
+# 🔥 5️⃣ SILVER LAYER (Glue Spark ETL)
+
+Now your real work starts.
+
+## Business Logic:
+
+* Remove duplicates
+* Handle nulls
+* Standardize date
+* Join product master
+* Add region mapping
+
+---
+
+## Example Glue PySpark Job
+
+```python
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, to_date
+
+spark = SparkSession.builder.appName("TCPL_Sales_Cleaning").getOrCreate()
+
+# Read bronze
+sales_df = spark.read.parquet("s3://tcpl-data-lake/bronze/distributor_sales/")
+
+product_df = spark.read.parquet("s3://tcpl-data-lake/bronze/product_master/")
+
+# Clean
+sales_df = sales_df.dropDuplicates()
+
+sales_df = sales_df.withColumn(
+    "invoice_date",
+    to_date(col("invoice_date"), "yyyy-MM-dd")
+)
+
+# Join product info
+enriched_df = sales_df.join(
+    product_df,
+    "sku_id",
+    "left"
+)
+
+# Write silver partitioned
+enriched_df.write \
+    .mode("overwrite") \
+    .partitionBy("invoice_date") \
+    .parquet("s3://tcpl-data-lake/silver/enriched_sales/")
+```
+
+Now we have:
+
+* Cleaned
+* Standardized
+* Enriched data
+
+---
+
+# 🥇 6️⃣ GOLD LAYER (Business Mart)
+
+Now business wants:
+
+> “Give me total sales per region per week per SKU”
+
+## Aggregation Logic
+
+```python
+from pyspark.sql.functions import sum, weekofyear, year
+
+gold_df = enriched_df \
+    .withColumn("week", weekofyear(col("invoice_date"))) \
+    .withColumn("year", year(col("invoice_date"))) \
+    .groupBy("region","sku_id","year","week") \
+    .agg(sum("amount").alias("total_sales"))
+
+gold_df.write \
+    .mode("overwrite") \
+    .parquet("s3://tcpl-data-lake/gold/sales_mart/")
+```
+
+Now BI team queries gold only.
+
+---
+
+# 🔎 7️⃣ Athena Usage
+
+Business user runs:
+
+```sql
+SELECT region, SUM(total_sales)
+FROM sales_mart
+WHERE year = 2026
+GROUP BY region;
+```
+
+Athena reads directly from S3 gold.
+
+Serverless.
+
+---
+
+# ❄️ 8️⃣ Snowflake (Enterprise Warehouse)
+
+Sometimes TCPL global team wants centralized warehouse.
+
+We load gold to Snowflake.
+
+```
+COPY INTO TCPL_SALES_MART
+FROM @S3_STAGE
+FILE_FORMAT = (TYPE = PARQUET);
+```
+
+Now:
+
+* Tableau
+* Power BI
+* Global dashboards connect to Snowflake.
+
+---
+
+# 🤖 9️⃣ SageMaker (Demand Forecasting)
+
+Now ML team builds:
+
+> Next 4 weeks SKU demand prediction
+
+## Feature Engineering (Glue)
+
+Features:
+
+* Last 8 weeks sales
+* Promo flag
+* Region
+* Festival flag
+
+Saved as:
+
+```
+gold/demand_forecast_features/
+```
+
+---
+
+## SageMaker Training
+
+Example:
+
+```python
+import xgboost as xgb
+import pandas as pd
+
+df = pd.read_parquet("s3://tcpl-data-lake/gold/demand_forecast_features/")
+
+X = df.drop("future_sales", axis=1)
+y = df["future_sales"]
+
+model = xgb.XGBRegressor()
+model.fit(X, y)
+
+model.save_model("model.json")
+```
+
+Model artifact → S3.
+
+---
+
+# 🚀 🔟 Model Deployment
+
+SageMaker Endpoint created:
+
+```
+tcpl-demand-forecast-endpoint
+```
+
+---
+
+# ⚡ 11️⃣ Lambda (Real-Time API)
+
+Retail planning tool calls API:
+
+```
+GET /predict?sku=SKU001&region=South
+```
+
+Lambda:
+
+* Receives request
+* Calls SageMaker endpoint
+* Returns forecast
+
+---
+
+# ⏰ 12️⃣ Airflow Orchestration
+
+Airflow DAG:
+
+1. Ingest raw
+2. Run crawler
+3. Run silver ETL
+4. Run gold aggregation
+5. Load to Snowflake
+6. Trigger SageMaker training weekly
+
+Everything automated.
+
+---
+
+# 🧠 REAL PRODUCTION FLOW (Daily)
+
+Morning 2 AM:
+
+Airflow triggers:
+
+* Glue Job 1 (Bronze → Silver)
+* Glue Job 2 (Silver → Gold)
+* Snowflake load
+* Data quality checks
+* Slack alert
+
+Weekly:
+
+* Retrain ML model
+
+---
+
+# 🧩 Where Lambda Is Used
+
+* Real-time prediction
+* Event trigger when new file lands in S3
+* Sending alerts if job fails
+* Triggering downstream process
+
+---
+
+# 🔐 Enterprise Add-ons
+
+In real TCPL project you will also see:
+
+* IAM Roles
+* VPC configuration
+* S3 lifecycle policies
+* Partition pruning
+* Glue bookmarks
+* Data Quality frameworks
+* CI/CD for Glue jobs
+* Git-based deployment
+* Dev → QA → Prod environments
+
+---
+
+# 🎯 What YOU (as Data Engineer) Will Actually Do
+
+Mostly:
+
+* Write Glue PySpark jobs
+* Optimize partitions
+* Manage Glue Catalog
+* Work on S3 performance
+* Handle Snowflake loads
+* Create Airflow DAGs
+* Debug job failures
+* Handle schema evolution
+
+ML team handles SageMaker mostly.
+
+---
+
+# 🏆 Final Understanding
+
+Even though JD said Azure + Databricks…
+
+This AWS architecture is:
+
+S3 = ADLS
+Glue = Databricks Spark
+Catalog = Unity Catalog
+Athena = SQL endpoint
+SageMaker = Azure ML
+Lambda = Azure Function
+Airflow = ADF
+
+You are still doing SAME data engineering.
+
+Only cloud provider changed.
+
+---
+
+If you want next level:
+
+I can now simulate:
+
+* 🔥 Real Production Incident Scenario
+* 🔥 Performance Optimization Case
+* 🔥 Promotion Effectiveness ML Deep Dive
+* 🔥 FMCG specific KPI breakdown
+
+Tell me what you want next 😎
