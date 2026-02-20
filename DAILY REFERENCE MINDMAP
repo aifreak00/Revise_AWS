@@ -1,0 +1,687 @@
+# 🗺️ PRODUCTION-READY WORK REFERENCE MINDMAP
+
+Perfect! You need a **PRACTICAL WORK REFERENCE** for when you're actually working at the client site. Let me create a **COMPREHENSIVE WORK GUIDE** you can glance at daily!
+
+---
+
+## 📋 **QUICK DAILY REFERENCE MINDMAP**
+
+```
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║           🏢 DECISION POINT ANALYTICS - DAILY WORK REFERENCE                 ║
+║              Your Complete Guide to CPG Analytics Platform                   ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 🌅 MORNING ROUTINE (8:00 AM - 9:30 AM)                                      │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ☐ 1. CHECK SLACK CHANNELS                                                  │
+│     • #data-pipeline-alerts (any overnight failures?)                       │
+│     • #data-engineering (team updates)                                      │
+│     • #deployments (what was deployed yesterday?)                           │
+│                                                                              │
+│  ☐ 2. OPEN AIRFLOW WEB UI                                                   │
+│     URL: https://abc12345-xxxx.c2.us-east-1.airflow.amazonaws.com          │
+│     Check:                                                                   │
+│     • cpg_analytics_master_pipeline (ran at 2 AM?)                          │
+│       - Status: ✅ Success / ❌ Failed                                       │
+│       - Duration: ~45 minutes expected                                       │
+│       - If failed: Click task → View logs                                   │
+│     • weekly_ml_retraining (Monday only)                                    │
+│     • hourly_data_quality_monitoring                                         │
+│                                                                              │
+│  ☐ 3. CHECK AWS CLOUDWATCH DASHBOARD                                        │
+│     Console → CloudWatch → Dashboards → "DPA-Production"                    │
+│     Quick checks:                                                            │
+│     • Glue jobs success rate: Should be >95%                                │
+│     • Lambda errors: Should be <1%                                           │
+│     • Data quality rejection rate: Should be <5%                             │
+│     • Kafka lag: Should be <1000 messages                                   │
+│                                                                              │
+│  ☐ 4. CHECK SNOWFLAKE                                                       │
+│     Login: https://abc12345.us-east-1.snowflakecomputing.com               │
+│     Quick query:                                                             │
+│     ```sql                                                                   │
+│     -- Check latest data                                                     │
+│     SELECT MAX(_SNOWFLAKE_LOADED_AT) AS last_load,                          │
+│            COUNT(*) AS total_records                                         │
+│     FROM ANALYTICS_PROD.STAGING.STG_PROMOTIONS_ENRICHED;                    │
+│                                                                              │
+│     -- Should be within last 6 hours                                         │
+│     ```                                                                      │
+│                                                                              │
+│  ☐ 5. REVIEW YOUR JIRA BOARD                                                │
+│     URL: https://dpa.atlassian.net                                          │
+│     • Sprint: Sprint 18 (current)                                           │
+│     • Your tickets: Filter by "Assignee = You"                              │
+│     • Today's focus: Pick 1-2 tickets to work on                            │
+│                                                                              │
+│  ☐ 6. DAILY STANDUP (9:00 AM)                                               │
+│     Prepare answers:                                                         │
+│     • Yesterday: "Completed CPG-XXX, deployed to dev"                       │
+│     • Today: "Working on CPG-YYY, adding feature Z"                         │
+│     • Blockers: "Need review from Raj on PR #123"                           │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 🔨 DEVELOPMENT WORKFLOW (10:00 AM - 5:00 PM)                                │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  STEP 1: PULL LATEST CODE                                                   │
+│  ────────────────────────                                                   │
+│  ```bash                                                                     │
+│  cd ~/projects/dpa-cpg-analytics                                            │
+│  git checkout main                                                           │
+│  git pull origin main                                                        │
+│  ```                                                                         │
+│                                                                              │
+│  STEP 2: CREATE FEATURE BRANCH                                              │
+│  ────────────────────────────                                               │
+│  ```bash                                                                     │
+│  # Branch naming: feature/CPG-XXX-short-description                         │
+│  git checkout -b feature/CPG-701-add-fraud-detection                        │
+│  ```                                                                         │
+│                                                                              │
+│  STEP 3: DEVELOPMENT WORK                                                   │
+│  ────────────────────────                                                   │
+│  📂 Working on Glue Job?                                                    │
+│     • Location: glue/jobs/bronze_promo_ingestion.py                         │
+│     • Test locally: pytest glue/tests/test_bronze_ingestion.py             │
+│     • Upload to S3: aws s3 cp ... s3://dpa-glue-scripts-dev/               │
+│                                                                              │
+│  📂 Working on Lambda?                                                      │
+│     • Location: lambda/functions/kafka_consumer/lambda_function.py          │
+│     • Test locally: pytest lambda/functions/kafka_consumer/tests/           │
+│     • Package: cd lambda/functions/kafka_consumer && zip -r function.zip .  │
+│                                                                              │
+│  📂 Working on dbt?                                                         │
+│     • Location: dbt/dpa_analytics/models/marts/                             │
+│     • Test: dbt run --select model_name --target dev                        │
+│     • Test: dbt test --select model_name                                    │
+│                                                                              │
+│  📂 Working on Airflow DAG?                                                 │
+│     • Location: airflow/dags/cpg_analytics_master_pipeline.py              │
+│     • Test: python -m pytest airflow/tests/                                 │
+│     • Syntax check: python airflow/dags/cpg_analytics_master_pipeline.py   │
+│                                                                              │
+│  📂 Working on SageMaker?                                                   │
+│     • Location: sagemaker/training/train_promo_lift_model.py               │
+│     • Test: pytest sagemaker/tests/                                         │
+│                                                                              │
+│  STEP 4: WRITE TESTS (IMPORTANT!)                                           │
+│  ────────────────────────────────                                           │
+│  ```bash                                                                     │
+│  # Always write tests before committing                                      │
+│  pytest tests/ -v --cov                                                      │
+│                                                                              │
+│  # Coverage should be >80%                                                   │
+│  coverage report                                                             │
+│  ```                                                                         │
+│                                                                              │
+│  STEP 5: RUN LINTERS                                                        │
+│  ────────────────────────                                                   │
+│  ```bash                                                                     │
+│  # Format code                                                               │
+│  black glue/ lambda/ sagemaker/ airflow/                                    │
+│  isort glue/ lambda/ sagemaker/ airflow/                                    │
+│                                                                              │
+│  # Lint                                                                      │
+│  pylint glue/jobs/your_file.py                                              │
+│  flake8 glue/jobs/your_file.py                                              │
+│  ```                                                                         │
+│                                                                              │
+│  STEP 6: COMMIT & PUSH                                                      │
+│  ────────────────────────                                                   │
+│  ```bash                                                                     │
+│  git add .                                                                   │
+│  git commit -m "CPG-701: Add fraud detection to transaction processor"     │
+│  git push origin feature/CPG-701-add-fraud-detection                        │
+│  ```                                                                         │
+│                                                                              │
+│  STEP 7: CREATE PULL REQUEST                                                │
+│  ────────────────────────────                                               │
+│  • Go to: https://github.com/dpa/cpg-analytics/pulls                       │
+│  • Click "New Pull Request"                                                  │
+│  • Base: main ← Compare: feature/CPG-701-add-fraud-detection               │
+│  • Title: "CPG-701: Add fraud detection to transaction processor"          │
+│  • Description: (Use template - auto-filled)                                │
+│    - What: Added real-time fraud detection                                  │
+│    - Why: Reduce fraudulent transactions                                    │
+│    - Testing: Added unit tests, integration tests                           │
+│    - JIRA: CPG-701                                                          │
+│  • Reviewers: @raj, @maria                                                  │
+│  • Create PR                                                                 │
+│                                                                              │
+│  STEP 8: WAIT FOR CI/CD & REVIEWS                                           │
+│  ────────────────────────────────────                                       │
+│  • GitHub Actions runs automatically (5-10 mins)                            │
+│  • Check status: All checks must pass ✅                                    │
+│  • Code review: Raj/Maria will comment                                      │
+│  • Address feedback: Make changes, push again                               │
+│  • Approval: Once approved, merge to main                                   │
+│                                                                              │
+│  STEP 9: POST-MERGE                                                         │
+│  ────────────────────────                                                   │
+│  • CD pipeline deploys to dev automatically                                 │
+│  • Check Airflow: Verify DAG updated                                        │
+│  • Smoke test: Run quick test in dev                                        │
+│  • Update JIRA: Move ticket to "Done"                                       │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 🆘 TROUBLESHOOTING GUIDE (WHEN THINGS GO WRONG)                             │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  🚨 SCENARIO 1: AIRFLOW DAG FAILED                                          │
+│  ─────────────────────────────────                                          │
+│  Symptoms: DAG shows red ❌ in Airflow UI                                   │
+│                                                                              │
+│  Steps:                                                                      │
+│  1. Click on failed task (red box)                                          │
+│  2. Click "Log" button                                                       │
+│  3. Look for ERROR or EXCEPTION in logs                                     │
+│  4. Common issues:                                                           │
+│     • "File not found in S3" → Check S3 bucket, verify file uploaded        │
+│     • "Glue job failed" → Check Glue job logs in CloudWatch                 │
+│     • "Connection failed" → Check Airflow connections (Admin → Connections) │
+│  5. Fix the issue                                                            │
+│  6. Click "Clear" button on failed task                                     │
+│  7. Click "Run" to re-run                                                    │
+│                                                                              │
+│  🚨 SCENARIO 2: GLUE JOB FAILED                                             │
+│  ─────────────────────────                                                  │
+│  Symptoms: Glue job shows "FAILED" status                                   │
+│                                                                              │
+│  Steps:                                                                      │
+│  1. AWS Console → Glue → Jobs → bronze-promo-ingestion                      │
+│  2. Click "Runs" tab                                                         │
+│  3. Click on failed run                                                      │
+│  4. Click "Logs" → "Error logs"                                             │
+│  5. Common issues:                                                           │
+│     • "S3 access denied" → Check IAM role permissions                        │
+│     • "Schema mismatch" → CSV structure changed, update schema               │
+│     • "Out of memory" → Increase DPU (Data Processing Units)                │
+│  6. Fix code in glue/jobs/                                                  │
+│  7. Upload to S3: aws s3 cp glue/jobs/xxx.py s3://...                      │
+│  8. Re-run job: aws glue start-job-run --job-name bronze-promo-ingestion   │
+│                                                                              │
+│  🚨 SCENARIO 3: SNOWFLAKE DATA NOT LOADING                                  │
+│  ─────────────────────────────────────                                      │
+│  Symptoms: Data in S3 but not in Snowflake                                  │
+│                                                                              │
+│  Steps:                                                                      │
+│  1. Check Snowpipe status:                                                   │
+│     ```sql                                                                   │
+│     SELECT SYSTEM$PIPE_STATUS('ANALYTICS_PROD.STAGING.PIPE_PROMOTIONS');   │
+│     ```                                                                      │
+│  2. Check for errors:                                                        │
+│     ```sql                                                                   │
+│     SELECT * FROM TABLE(INFORMATION_SCHEMA.COPY_HISTORY(                    │
+│       TABLE_NAME => 'STG_PROMOTIONS_ENRICHED',                              │
+│       START_TIME => DATEADD(HOUR, -24, CURRENT_TIMESTAMP())                 │
+│     )) ORDER BY LAST_LOAD_TIME DESC;                                         │
+│     ```                                                                      │
+│  3. Common issues:                                                           │
+│     • S3 notification not configured → Check S3 event notification           │
+│     • IAM role issue → Check storage integration                             │
+│     • File format mismatch → Verify Parquet schema                           │
+│  4. Manual load if needed:                                                   │
+│     ```sql                                                                   │
+│     COPY INTO ANALYTICS_PROD.STAGING.STG_PROMOTIONS_ENRICHED               │
+│     FROM @S3_SILVER_STAGE                                                    │
+│     FILE_FORMAT = (TYPE = PARQUET);                                          │
+│     ```                                                                      │
+│                                                                              │
+│  🚨 SCENARIO 4: KAFKA LAG INCREASING                                        │
+│  ─────────────────────────────────                                          │
+│  Symptoms: Consumer falling behind producer                                 │
+│                                                                              │
+│  Steps:                                                                      │
+│  1. Check lag:                                                               │
+│     ```bash                                                                  │
+│     kafka-consumer-groups.sh --bootstrap-server $BOOTSTRAP_SERVERS \       │
+│       --describe --group transaction-consumer-group                          │
+│     ```                                                                      │
+│  2. If LAG > 10,000:                                                         │
+│     • Scale up Lambda concurrency (AWS Console)                              │
+│     • Increase Kafka partitions                                              │
+│     • Optimize consumer code                                                 │
+│  3. Check CloudWatch metrics:                                                │
+│     • Lambda duration (should be <5 seconds)                                 │
+│     • Lambda errors (should be <1%)                                          │
+│                                                                              │
+│  🚨 SCENARIO 5: CI/CD PIPELINE FAILING                                      │
+│  ─────────────────────────────────────                                      │
+│  Symptoms: PR checks failing, can't merge                                   │
+│                                                                              │
+│  Steps:                                                                      │
+│  1. Go to PR → Checks tab                                                    │
+│  2. Click on failed check                                                    │
+│  3. Common failures:                                                         │
+│     • Linting failed → Run `black` and `pylint` locally                     │
+│     • Tests failed → Run `pytest` locally, fix failing tests                │
+│     • Coverage too low → Add more tests                                      │
+│  4. Fix locally                                                              │
+│  5. Commit & push → CI runs again automatically                             │
+│                                                                              │
+│  🚨 SCENARIO 6: PRODUCTION ISSUE                                            │
+│  ─────────────────────────────────────                                      │
+│  Symptoms: Production pipeline broken, data not flowing                     │
+│                                                                              │
+│  IMMEDIATE STEPS (Do this first!):                                          │
+│  1. Post in Slack #incidents: "Production issue - investigating"            │
+│  2. Check Airflow production DAG                                             │
+│  3. Check CloudWatch alarms (what's red?)                                   │
+│  4. Check recent deployments (did something just deploy?)                   │
+│                                                                              │
+│  ESCALATION:                                                                 │
+│  • If can't fix in 15 mins → Ping Raj: "@raj need help with prod issue"    │
+│  • If critical (business stopped) → Call Sarah: +1-555-0123                 │
+│                                                                              │
+│  ROLLBACK (if recent deployment caused it):                                 │
+│  1. GitHub → Actions → Find prod deployment workflow                         │
+│  2. Trigger rollback workflow (manual)                                       │
+│  3. Verify services back to normal                                           │
+│  4. Post-mortem: Document what happened                                      │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 📚 QUICK COMMAND REFERENCE (COPY-PASTE READY)                               │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  AWS GLUE                                                                    │
+│  ────────                                                                    │
+│  # List Glue jobs                                                            │
+│  aws glue list-jobs --profile dpa-prod                                      │
+│                                                                              │
+│  # Start a Glue job                                                          │
+│  aws glue start-job-run --job-name bronze-promo-ingestion --profile dpa-prod│
+│                                                                              │
+│  # Check job status                                                          │
+│  aws glue get-job-run --job-name bronze-promo-ingestion \                   │
+│    --run-id jr_xxx --profile dpa-prod                                       │
+│                                                                              │
+│  # Upload Glue script                                                        │
+│  aws s3 cp glue/jobs/bronze_promo_ingestion.py \                            │
+│    s3://dpa-glue-scripts-dev/jobs/ --profile dpa-prod                       │
+│                                                                              │
+│  LAMBDA                                                                      │
+│  ──────                                                                      │
+│  # List Lambda functions                                                     │
+│  aws lambda list-functions --profile dpa-prod                               │
+│                                                                              │
+│  # Update Lambda code                                                        │
+│  aws lambda update-function-code \                                           │
+│    --function-name kafka-transaction-processor \                             │
+│    --zip-file fileb://function.zip --profile dpa-prod                       │
+│                                                                              │
+│  # Invoke Lambda (test)                                                      │
+│  aws lambda invoke --function-name kafka-transaction-processor \            │
+│    --payload '{"test": true}' response.json --profile dpa-prod              │
+│                                                                              │
+│  KAFKA (MSK)                                                                 │
+│  ───────────                                                                 │
+│  # Set bootstrap servers                                                     │
+│  export BOOTSTRAP_SERVERS="b-1.dpa-kafka.xxx:9092,b-2.dpa-kafka.xxx:9092"  │
+│                                                                              │
+│  # List topics                                                               │
+│  kafka-topics.sh --list --bootstrap-server $BOOTSTRAP_SERVERS               │
+│                                                                              │
+│  # Describe topic                                                            │
+│  kafka-topics.sh --describe --topic transactions-stream \                   │
+│    --bootstrap-server $BOOTSTRAP_SERVERS                                    │
+│                                                                              │
+│  # Check consumer lag                                                        │
+│  kafka-consumer-groups.sh --bootstrap-server $BOOTSTRAP_SERVERS \           │
+│    --describe --group transaction-consumer-group                             │
+│                                                                              │
+│  # Consume messages (tail)                                                   │
+│  kafka-console-consumer.sh --bootstrap-server $BOOTSTRAP_SERVERS \          │
+│    --topic transactions-stream --from-beginning --max-messages 10            │
+│                                                                              │
+│  SNOWFLAKE                                                                   │
+│  ─────────                                                                   │
+│  # Check data freshness                                                      │
+│  SELECT MAX(_SNOWFLAKE_LOADED_AT), COUNT(*)                                 │
+│  FROM ANALYTICS_PROD.STAGING.STG_PROMOTIONS_ENRICHED;                       │
+│                                                                              │
+│  # Check Snowpipe status                                                     │
+│  SELECT SYSTEM$PIPE_STATUS('ANALYTICS_PROD.STAGING.PIPE_PROMOTIONS');      │
+│                                                                              │
+│  # Manual load                                                               │
+│  COPY INTO ANALYTICS_PROD.STAGING.STG_PROMOTIONS_ENRICHED                  │
+│  FROM @S3_SILVER_STAGE FILE_FORMAT = (TYPE = PARQUET);                      │
+│                                                                              │
+│  # Refresh materialized view                                                 │
+│  ALTER MATERIALIZED VIEW ANALYTICS_PROD.GOLD.MV_PROMO_SUMMARY REFRESH;     │
+│                                                                              │
+│  DBT                                                                         │
+│  ───                                                                         │
+│  # Run specific model                                                        │
+│  dbt run --select monthly_promo_summary --target dev                        │
+│                                                                              │
+│  # Run all models                                                            │
+│  dbt run --target dev                                                        │
+│                                                                              │
+│  # Run tests                                                                 │
+│  dbt test --select monthly_promo_summary                                    │
+│                                                                              │
+│  # Generate docs                                                             │
+│  dbt docs generate                                                           │
+│  dbt docs serve                                                              │
+│                                                                              │
+│  SAGEMAKER                                                                   │
+│  ─────────                                                                   │
+│  # List training jobs                                                        │
+│  aws sagemaker list-training-jobs --profile dpa-prod                        │
+│                                                                              │
+│  # Describe training job                                                     │
+│  aws sagemaker describe-training-job \                                       │
+│    --training-job-name promo-lift-xgboost-2024-02-20 --profile dpa-prod    │
+│                                                                              │
+│  # List models                                                               │
+│  aws sagemaker list-model-packages \                                         │
+│    --model-package-group-name promo-lift-prediction-models \                │
+│    --profile dpa-prod                                                        │
+│                                                                              │
+│  GIT                                                                         │
+│  ───                                                                         │
+│  # Daily workflow                                                            │
+│  git checkout main                                                           │
+│  git pull origin main                                                        │
+│  git checkout -b feature/CPG-XXX-description                                │
+│  # ... make changes ...                                                      │
+│  git add .                                                                   │
+│  git commit -m "CPG-XXX: Description"                                       │
+│  git push origin feature/CPG-XXX-description                                │
+│                                                                              │
+│  # Sync with main                                                            │
+│  git checkout main                                                           │
+│  git pull origin main                                                        │
+│  git checkout feature/CPG-XXX-description                                   │
+│  git rebase main                                                             │
+│                                                                              │
+│  TESTING                                                                     │
+│  ───────                                                                     │
+│  # Run all tests                                                             │
+│  pytest tests/ -v                                                            │
+│                                                                              │
+│  # Run with coverage                                                         │
+│  pytest tests/ -v --cov=glue --cov=lambda --cov-report=html                │
+│                                                                              │
+│  # Run specific test file                                                    │
+│  pytest glue/tests/test_bronze_ingestion.py -v                              │
+│                                                                              │
+│  # Run specific test                                                         │
+│  pytest glue/tests/test_bronze_ingestion.py::test_data_validation -v       │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 🔗 IMPORTANT LINKS (BOOKMARK THESE!)                                        │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  📊 DASHBOARDS & MONITORING                                                 │
+│  • Airflow: https://abc12345-xxxx.c2.us-east-1.airflow.amazonaws.com       │
+│  • CloudWatch: https://console.aws.amazon.com/cloudwatch                    │
+│  • Snowflake: https://abc12345.us-east-1.snowflakecomputing.com            │
+│  • Grafana: https://grafana.dpa.com (if available)                          │
+│                                                                              │
+│  🔧 TOOLS                                                                    │
+│  • JIRA: https://dpa.atlassian.net                                          │
+│  • GitHub: https://github.com/dpa/cpg-analytics                             │
+│  • Confluence: https://dpa.atlassian.net/wiki                               │
+│  • Slack: https://dpa.slack.com                                             │
+│                                                                              │
+│  📚 DOCUMENTATION                                                            │
+│  • Project Wiki: https://dpa.atlassian.net/wiki/spaces/CPG                 │
+│  • Runbooks: https://dpa.atlassian.net/wiki/spaces/CPG/runbooks            │
+│  • Architecture: https://dpa.atlassian.net/wiki/spaces/CPG/architecture    │
+│  • API Docs: https://docs.dpa.com                                           │
+│                                                                              │
+│  ☁️ AWS CONSOLE                                                             │
+│  • Main: https://console.aws.amazon.com                                     │
+│  • Glue: https://console.aws.amazon.com/glue                                │
+│  • Lambda: https://console.aws.amazon.com/lambda                            │
+│  • S3: https://s3.console.aws.amazon.com/s3                                 │
+│  • MSK: https://console.aws.amazon.com/msk                                  │
+│  • SageMaker: https://console.aws.amazon.com/sagemaker                      │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 📞 WHO TO CONTACT (ESCALATION PATH)                                         │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  FOR TECHNICAL ISSUES:                                                       │
+│  1. Raj (Senior Engineer)         - Slack: @raj / Email: raj@dpa.com       │
+│     → Data pipeline issues, Glue, Snowflake, architecture questions         │
+│                                                                              │
+│  2. Maria (ML Engineer)            - Slack: @maria / Email: maria@dpa.com   │
+│     → ML model issues, SageMaker, feature engineering                        │
+│                                                                              │
+│  3. David (DevOps)                 - Slack: @david / Email: david@dpa.com   │
+│     → CI/CD, AWS infrastructure, Kafka, networking                           │
+│                                                                              │
+│  FOR PROJECT/PROCESS:                                                        │
+│  4. Sarah (PM)                     - Slack: @sarah / Phone: +1-555-0123     │
+│     → JIRA issues, sprint planning, stakeholder questions                    │
+│                                                                              │
+│  FOR EMERGENCIES (PRODUCTION DOWN):                                          │
+│  5. On-call Engineer                - PagerDuty / Slack: @oncall            │
+│  6. Sarah (PM)                      - Phone: +1-555-0123                     │
+│  7. Director of Engineering         - Phone: +1-555-0199 (last resort)      │
+│                                                                              │
+│  SLACK CHANNELS:                                                             │
+│  • #data-engineering       → General team chat                               │
+│  • #data-pipeline-alerts   → Automated alerts                               │
+│  • #deployments            → Deployment notifications                        │
+│  • #incidents              → Production issues                               │
+│  • #help-data-eng          → Ask questions                                   │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ⚡ JIRA WORKFLOW CHEAT SHEET                                                │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  STORY LIFECYCLE:                                                            │
+│  ┌─────────┐   ┌─────────┐   ┌────────────┐   ┌──────────┐   ┌──────┐   │
+│  │ BACKLOG │→→ │  TO DO  │→→ │IN PROGRESS │→→ │ IN REVIEW│→→ │ DONE │   │
+│  └─────────┘   └─────────┘   └────────────┘   └──────────┘   └──────┘   │
+│                                                                              │
+│  YOUR ACTIONS:                                                               │
+│                                                                              │
+│  When you pick up a story:                                                   │
+│  1. Drag from "TO DO" → "IN PROGRESS"                                       │
+│  2. Add comment: "Starting work on this"                                     │
+│  3. Create subtasks if needed                                                │
+│                                                                              │
+│  While working:                                                              │
+│  4. Update daily: "Completed X, working on Y"                                │
+│  5. Log time: Click "..." → Log Work → Enter hours                          │
+│                                                                              │
+│  When done coding:                                                           │
+│  6. Create PR, add PR link to JIRA                                           │
+│  7. Drag to "IN REVIEW"                                                      │
+│  8. Assign to reviewer (usually Raj)                                         │
+│                                                                              │
+│  After PR merged:                                                            │
+│  9. Drag to "DONE"                                                           │
+│  10. Add final comment: "Deployed to dev, tested successfully"              │
+│                                                                              │
+│  STORY POINTS:                                                               │
+│  1 pt  = 1-2 hours   (simple config change)                                 │
+│  2 pts = 2-4 hours   (small feature, few lines of code)                     │
+│  3 pts = 4-8 hours   (medium feature, new function)                         │
+│  5 pts = 1-2 days    (larger feature, multiple files)                       │
+│  8 pts = 2-3 days    (complex feature, testing needed)                      │
+│  13 pts = 3-5 days   (very complex, spans multiple components)              │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 🎯 WEEKLY CYCLE                                                             │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  MONDAY:                                                                     │
+│  • 9:00 AM  - Sprint Planning (if start of sprint)                          │
+│  • 9:00 AM  - Regular standup (if mid-sprint)                               │
+│  • 3:00 AM  - ML model retraining runs (automatic)                          │
+│                                                                              │
+│  TUESDAY - THURSDAY:                                                         │
+│  • 9:00 AM  - Daily standup                                                  │
+│  • 2:00 AM  - Master pipeline runs (every day)                              │
+│  • Ad-hoc   - Code reviews, pair programming                                │
+│                                                                              │
+│  FRIDAY:                                                                     │
+│  • 9:00 AM  - Daily standup                                                  │
+│  • 2:00 PM  - Sprint Review / Demo (end of sprint)                          │
+│  • 3:30 PM  - Sprint Retrospective (end of sprint)                          │
+│  • 4:00 PM  - Team social / Knowledge sharing                               │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 💾 **SAVE THIS AS A FILE**
+
+**Create this file on your work laptop:**
+
+```bash
+# Save to your home directory
+nano ~/DPA_WORK_REFERENCE.txt
+
+# Or create a markdown version
+nano ~/DPA_WORK_REFERENCE.md
+
+# Make it always visible - add alias to your .bashrc
+echo "alias work='cat ~/DPA_WORK_REFERENCE.txt'" >> ~/.bashrc
+source ~/.bashrc
+
+# Now just type 'work' in terminal to see this guide anytime!
+```
+
+---
+
+## 📱 **MOBILE VERSION - FOR QUICK GLANCE**
+
+```
+╔════════════════════════════════════╗
+║   DPA QUICK REFERENCE (MOBILE)     ║
+╠════════════════════════════════════╣
+║                                    ║
+║ MORNING CHECKS:                    ║
+║ ☐ Slack alerts                     ║
+║ ☐ Airflow (2 AM run ok?)           ║
+║ ☐ CloudWatch dashboard             ║
+║ ☐ Snowflake data fresh?            ║
+║ ☐ JIRA board                       ║
+║                                    ║
+║ WORK FLOW:                         ║
+║ 1. Pull main                       ║
+║ 2. Create branch                   ║
+║ 3. Code + Test                     ║
+║ 4. Lint + Format                   ║
+║ 5. Commit + Push                   ║
+║ 6. Create PR                       ║
+║ 7. Wait for approval               ║
+║ 8. Merge → auto-deploy dev         ║
+║                                    ║
+║ EMERGENCY:                         ║
+║ 1. Post #incidents                 ║
+║ 2. Check CloudWatch                ║
+║ 3. Ping @raj if stuck              ║
+║ 4. Call Sarah if critical          ║
+║                                    ║
+║ LINKS:                             ║
+║ • Airflow: abc12345.airflow...    ║
+║ • JIRA: dpa.atlassian.net          ║
+║ • GitHub: github.com/dpa/cpg       ║
+║                                    ║
+╚════════════════════════════════════╝
+```
+
+**Save this to your phone's notes app for quick reference!**
+
+---
+
+## 🖨️ **PRINT THIS - DESK REFERENCE**
+
+**ONE-PAGE DESK REFERENCE (PRINT & LAMINATE):**
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│          🏢 DPA CPG ANALYTICS - DESK REFERENCE                 │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│ DAILY ROUTINE:                                                 │
+│ 8:00 → Check Slack, Airflow, CloudWatch, Snowflake           │
+│ 9:00 → Standup (Yesterday, Today, Blockers)                  │
+│ 9:30-5:30 → Development (git → code → test → PR)             │
+│ 5:30 → Update JIRA, commit, EOD summary                       │
+│                                                                │
+│ KEY SYSTEMS:                                                   │
+│ • Airflow   https://abc12345.airflow.amazonaws.com           │
+│ • JIRA      https://dpa.atlassian.net                         │
+│ • GitHub    https://github.com/dpa/cpg-analytics              │
+│ • Snowflake https://abc12345.snowflakecomputing.com          │
+│ • AWS       https://console.aws.amazon.com                    │
+│                                                                │
+│ DATA PIPELINE:                                                 │
+│ S3 Landing → Glue (Bronze) → Glue (Silver) → Snowflake (Gold)│
+│ dbt transforms → ML (SageMaker) → Predictions                 │
+│ Orchestrated by: Airflow (Daily 2 AM)                         │
+│                                                                │
+│ CODE LOCATIONS:                                                │
+│ • Glue:     glue/jobs/*.py                                    │
+│ • Lambda:   lambda/functions/*/lambda_function.py             │
+│ • dbt:      dbt/dpa_analytics/models/                         │
+│ • Airflow:  airflow/dags/*.py                                 │
+│ • Tests:    */tests/                                          │
+│                                                                │
+│ EMERGENCY CONTACTS:                                            │
+│ • Raj (Tech Lead):  @raj / raj@dpa.com                        │
+│ • Sarah (PM):       @sarah / +1-555-0123                      │
+│ • On-call:          @oncall in Slack                           │
+│                                                                │
+│ COMMON COMMANDS:                                               │
+│ aws glue start-job-run --job-name bronze-promo-ingestion     │
+│ dbt run --select model_name --target dev                      │
+│ pytest tests/ -v --cov                                         │
+│ git checkout -b feature/CPG-XXX-desc                          │
+│                                                                │
+│ WHEN STUCK:                                                    │
+│ 1. Check logs (CloudWatch / Airflow)                          │
+│ 2. Search Confluence wiki                                     │
+│ 3. Ask in #help-data-eng                                      │
+│ 4. Ping Raj if urgent                                         │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+**This is your COMPLETE WORK REFERENCE! Print it, save it, keep it handy on Day 1!** 
+
+You can now **glance at this anytime** to remember:
+- ✅ What to check in the morning
+- ✅ How to do your development work
+- ✅ What to do when things break
+- ✅ Who to contact
+- ✅ All important commands
+- ✅ All important links
+
+**Ready to start work on Day 1!** 🚀
+
+Would you like me to also create:
+1. **PDF version** (formatted nicely for printing)?
+2. **Notion/Confluence template** (for your team wiki)?
+3. **Anki flashcards** (for memorizing commands)?
